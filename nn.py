@@ -49,9 +49,11 @@ class SimpleNeuralNetwork(nn.Module):
 
                 optimizer.step()
 
-# Function to generate dummy data based on user input
-def generate_dummy_data(num_data_points, input_features, output_size, noise_level):
-    X = np.random.rand(num_data_points, input_features)
+def generate_dummy_data(num_data_points, input_size, output_size, noise_level):
+    # Generate input data as a 2D array with shape (num_data_points, input_size)
+    X = np.random.rand(num_data_points, input_size)  # Adjusted to use input_size for the number of features
+
+    # Generate output data (target) with noise
     y = np.sum(X, axis=1, keepdims=True) + noise_level * np.random.randn(num_data_points, output_size)
     
     # Convert to torch tensors
