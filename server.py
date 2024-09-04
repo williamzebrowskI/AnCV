@@ -6,6 +6,21 @@ import torch
 app = Flask(__name__)
 CORS(app)
 
+def reset_network_state():
+    # Reset the neural network state (re-initialize the neural network)
+    global nn  # Assuming nn is your global neural network object
+    input_size = 5  # You can use default values or pass these in the request
+    hidden_size = 4  # Default value for hidden layers
+    output_size = 1  # Default output size
+
+    nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)  # Re-instantiate the neural network
+
+    return {"message": "Neural network has been reset to initial state."}
+
+@app.route('/reset', methods=['POST'])
+def reset_network():
+    return jsonify(reset_network_state())
+
 @app.route('/train', methods=['POST'])
 def train():
     data = request.json
