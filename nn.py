@@ -31,7 +31,7 @@ class SimpleNeuralNetwork(nn.Module):
                 loss.backward()
                 backward_time = time.time() - start_time - forward_time
 
-                # Capture forward pass activations and backward pass gradients
+                # Capture forward pass activations, backward pass gradients, and weights/biases
                 forward_data = {
                     "input": inputs.tolist(),
                     "hidden_activation": hidden_activation.tolist(),
@@ -43,15 +43,21 @@ class SimpleNeuralNetwork(nn.Module):
                     "output_grad": self.output.weight.grad.abs().tolist(),
                     "backward_time": backward_time
                 }
+                weights_biases_data = {
+                    "hidden_weights": self.hidden.weight.detach().tolist(),
+                    "hidden_biases": self.hidden.bias.detach().tolist(),
+                    "output_weights": self.output.weight.detach().tolist(),
+                    "output_biases": self.output.bias.detach().tolist()
+                }
 
                 # Send data to the callback for visualization
-                callback(epoch, forward_data, backward_data, loss.item())
+                callback(epoch, forward_data, backward_data, weights_biases_data, loss.item())
 
                 optimizer.step()
 
 def generate_dummy_data(num_data_points, input_size, output_size, noise_level):
     # Generate input data as a 2D array with shape (num_data_points, input_size)
-    X = np.random.rand(num_data_points, input_size)  # Adjusted to use input_size for the number of features
+    X = np.random.rand(num_data_points, input_size)
 
     # Generate output data (target) with noise
     y = np.sum(X, axis=1, keepdims=True) + noise_level * np.random.randn(num_data_points, output_size)
