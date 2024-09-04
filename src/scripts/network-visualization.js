@@ -215,4 +215,6 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
 // // Function to clear the neural network visualization
 export function clearNetwork() {
     d3.select("#visualization").html(""); // Clear the SVG area
+    nodes = [];
+    links = [];
 }
