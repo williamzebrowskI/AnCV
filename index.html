@@ -55,7 +55,7 @@
             height: 100%;
             position: relative;
             background-color: #1a1a1a;
-            left: 260px; /* Offset by the controls' width */
+            left: 100px; /* Adjust this value to move it more to the left */
         }
 
         #lossDisplay {
@@ -173,6 +173,10 @@
             isDragging = true;
             offsetX = event.clientX - lossDisplay.getBoundingClientRect().left;
             offsetY = event.clientY - lossDisplay.getBoundingClientRect().top;
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('loadNetworkBtn').click();
         });
 
         document.addEventListener('mousemove', function (event) {
