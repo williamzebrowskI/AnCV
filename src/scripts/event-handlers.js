@@ -68,10 +68,9 @@ document.getElementById('stopTrainingBtn').addEventListener('click', function ()
     stopTraining = true;
 });
 
-// Event listener for "Reset All" button
 document.getElementById('resetAllBtn').addEventListener('click', function () {
     // Reset input fields to default values
-    document.getElementById('inputNodes').value = 3;
+    document.getElementById('inputNodes').value = 5;
     document.getElementById('hiddenLayers').value = '4,3';
     document.getElementById('outputNodes').value = 1;
     document.getElementById('epochs').value = 1000;
@@ -82,16 +81,28 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     // Reset the loss chart
     resetLossChart();
 
-    stopTraining = true
+    stopTraining = true; // Stop the training
+
+    // Clear the network visualization and its state
+    networkVisualization.clearNetwork();
 
     // Redraw the neural network with default parameters
-    const defaultInputNodes = 2;
-    const defaultHiddenLayers = [3, 2]; // Default hidden layers
+    const defaultInputNodes = 5;
+    const defaultHiddenLayers = [4, 3];
     const defaultOutputNodes = 1;
-
     const layers = [defaultInputNodes, ...defaultHiddenLayers, defaultOutputNodes];
 
-    networkVisualization.drawNeuralNetwork(layers); // Redraw the network with default values
+    networkVisualization.drawNeuralNetwork(layers); // Redraw the network
+
+    // Make a call to reset the backend neural network state
+    fetch('http://127.0.0.1:5000/reset', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data.message);  // Confirmation that the network has been reset
+    })
+    .catch(error => console.error('Error resetting network:', error));
 });
 // Call the expand logic for the loss display
 handleExpandLossDisplay();
