@@ -25,11 +25,12 @@ def train():
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
     training_results = []
 
-    def training_callback(epoch, forward_data, backward_data, loss):
+    def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss):
         training_results.append({
             'epoch': epoch,
             'forward_data': forward_data,
             'backward_data': backward_data,
+            'weights_biases_data': weights_biases_data,  # Include weights and biases
             'loss': loss  # Include the loss
         })
 
