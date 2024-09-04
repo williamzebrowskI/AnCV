@@ -55,3 +55,10 @@ export function handleExpandLossDisplay() {
         lossChart.resize(); // Resize the chart to fill the expanded or collapsed box
     });
 }
+
+// Function to reset the loss chart
+export function resetLossChart() {
+    lossChart.data.labels = [];
+    lossChart.data.datasets[0].data = [];
+    lossChart.update();
+}
