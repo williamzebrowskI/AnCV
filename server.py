@@ -10,7 +10,7 @@ CORS(app)  # Enable CORS for cross-origin requests
 def train():
     data = request.json
     input_size = data['inputNodes']
-    hidden_size = data['hiddenLayers'][0]  # Simplified to one hidden layer
+    hidden_size = data['hiddenLayers'][0]
     output_size = data['outputNodes']
     epochs = data['epochs']
     learning_rate = data['learningRate']  # Capture learning rate
@@ -24,11 +24,12 @@ def train():
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
     training_results = []
 
-    def training_callback(epoch, forward_data, backward_data):
+    def training_callback(epoch, forward_data, backward_data, loss):
         training_results.append({
             'epoch': epoch,
             'forward_data': forward_data,
-            'backward_data': backward_data
+            'backward_data': backward_data,
+            'loss': loss.item()  # Include the loss value
         })
 
     nn.train_network(training_data, epochs, learning_rate=learning_rate, callback=training_callback)
