@@ -131,8 +131,6 @@
         <canvas id="lossChart"></canvas>
     </div>
 
-    <!-- Loss display -->
-    <div id="lossDisplay">Loss: N/A</div>
     <script>
         let stopTraining = false;
         let lossDisplay = document.getElementById("lossDisplay");
@@ -312,12 +310,8 @@
                     setTimeout(() => {
                         animateBackwardPass(epochData.backward_data, svg, backwardDuration);
                     }, forwardDuration + 500);
-
                     // Plot loss in real-time
                     updateLossChart(epochData.epoch, epochData.loss);
-
-                    // Update the loss display
-                    // updateLossDisplay(epochData.loss);
 
                 }, epochIndex * 1000);
             });
