@@ -73,7 +73,10 @@
             text-align: center;
             cursor: move; /* Show move cursor */
             transition: width 0.3s ease, height 0.3s ease; /* Smooth expand/collapse transition */
+            width: 300px; /* Original width */
+            height: 175px; /* Original height */
         }
+
 
         #expandBtn {
             position: absolute;
@@ -89,17 +92,14 @@
             transform: rotate(45deg); /* Rotate to make it diagonal */
         }
 
-        /* Original size for the lossDisplay */
-        #lossDisplay {
-            width: 300px; /* Adjust to the original size */
-            height: 175px; /* Adjust to the original size */
-            transition: width 0.3s ease, height 0.3s ease;
-        }
-
-                /* Expanded size for the lossDisplay */
         #lossDisplay.expanded {
             width: 600px; /* Expanded width */
-            height: 600px; /* Expanded height */
+            height: 350px; /* Expanded height */
+        }
+
+        #lossDisplay canvas {
+            width: 100% !important; /* Ensure the canvas takes the full width */
+            height: 100% !important; /* Ensure the canvas takes the full height */
         }
 
         circle {
@@ -191,7 +191,6 @@
             isDragging = false;
         });
 
-        // Expand/Collapse functionality
         document.getElementById('expandBtn').addEventListener('click', function() {
             const lossDisplay = document.getElementById('lossDisplay');
             
@@ -204,6 +203,7 @@
             }
             
             expanded = !expanded; // Toggle the state
+            lossChart.resize(); // Resize the chart to fill the expanded or collapsed box
         });
                 // Initialize the loss chart with Chart.js
         let lossChart = new Chart(lossChartCtx, {
