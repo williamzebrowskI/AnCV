@@ -87,6 +87,7 @@
             stroke-width: 3;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
@@ -125,11 +126,17 @@
     <!-- Neural network diagram area -->
     <div id="visualization"></div>
 
+    <!-- Loss display box with canvas for chart -->
+    <div id="lossDisplay">
+        <canvas id="lossChart"></canvas>
+    </div>
+
     <!-- Loss display -->
     <div id="lossDisplay">Loss: N/A</div>
     <script>
         let stopTraining = false;
         let lossDisplay = document.getElementById("lossDisplay");
+        let lossChartCtx = document.getElementById("lossChart").getContext('2d');
         let isDragging = false;
         let offsetX, offsetY;
 
@@ -144,13 +151,54 @@
             if (isDragging) {
                 lossDisplay.style.left = (event.clientX - offsetX) + "px";
                 lossDisplay.style.top = (event.clientY - offsetY) + "px";
-                lossDisplay.style.right = "auto"; // Disable automatic positioning on the right
+                lossDisplay.style.right = "auto";
             }
         });
 
         document.addEventListener('mouseup', function () {
             isDragging = false;
         });
+
+        // Initialize the loss chart with Chart.js
+        let lossChart = new Chart(lossChartCtx, {
+            type: 'line',
+            data: {
+                labels: [],  // Epochs
+                datasets: [{
+                    label: 'Loss',
+                    data: [],  // Loss values
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: false,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Epochs'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Loss'
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Update the loss chart in real-time
+        function updateLossChart(epoch, loss) {
+            lossChart.data.labels.push(epoch);
+            lossChart.data.datasets[0].data.push(loss);
+            lossChart.update();
+        }
 
         document.getElementById('loadNetworkBtn').addEventListener('click', function() {
             const inputNodes = parseInt(document.getElementById('inputNodes').value);
@@ -265,8 +313,11 @@
                         animateBackwardPass(epochData.backward_data, svg, backwardDuration);
                     }, forwardDuration + 500);
 
+                    // Plot loss in real-time
+                    updateLossChart(epochData.epoch, epochData.loss);
+
                     // Update the loss display
-                    updateLossDisplay(epochData.loss);
+                    // updateLossDisplay(epochData.loss);
 
                 }, epochIndex * 1000);
             });
