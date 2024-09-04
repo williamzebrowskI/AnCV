@@ -71,19 +71,18 @@ document.getElementById('stopTrainingBtn').addEventListener('click', function ()
 // Event listener for "Reset All" button
 document.getElementById('resetAllBtn').addEventListener('click', function () {
     // Reset input fields to default values
-    document.getElementById('inputNodes').value = 2;
-    document.getElementById('hiddenLayers').value = '3,2';
+    document.getElementById('inputNodes').value = 3;
+    document.getElementById('hiddenLayers').value = '4,3';
     document.getElementById('outputNodes').value = 1;
     document.getElementById('epochs').value = 1000;
     document.getElementById('learningRate').value = 0.0001;
     document.getElementById('numDataPoints').value = 100;
     document.getElementById('noiseLevel').value = 0.1;
 
-    // Clear the neural network visualization
-    networkVisualization.clearNetwork();
-
     // Reset the loss chart
     resetLossChart();
+
+    stopTraining = true
 
     // Redraw the neural network with default parameters
     const defaultInputNodes = 2;
