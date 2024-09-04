@@ -17,11 +17,10 @@ def train():
 
     # Extract the data complexity settings from the request
     num_data_points = data['numDataPoints']  # Ensure this matches the key sent from frontend
-    input_features = data['inputFeatures']  # Ensure this matches the key sent from frontend
     noise_level = data['noiseLevel']  # Ensure this matches the key sent from frontend
 
     # Generate complex dummy data based on user input
-    training_data = generate_dummy_data(num_data_points, input_features, output_size, noise_level)
+    training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level)
 
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
     training_results = []
