@@ -1,5 +1,5 @@
 import * as networkVisualization from './network-visualization.js';
-import { updateLossChart, handleExpandLossDisplay } from './chart-logic.js';
+import { updateLossChart, resetLossChart, handleExpandLossDisplay } from './chart-logic.js';
 
 export let stopTraining = false;
 
@@ -68,5 +68,31 @@ document.getElementById('stopTrainingBtn').addEventListener('click', function ()
     stopTraining = true;
 });
 
+// Event listener for "Reset All" button
+document.getElementById('resetAllBtn').addEventListener('click', function () {
+    // Reset input fields to default values
+    document.getElementById('inputNodes').value = 2;
+    document.getElementById('hiddenLayers').value = '3,2';
+    document.getElementById('outputNodes').value = 1;
+    document.getElementById('epochs').value = 1000;
+    document.getElementById('learningRate').value = 0.0001;
+    document.getElementById('numDataPoints').value = 100;
+    document.getElementById('noiseLevel').value = 0.1;
+
+    // Clear the neural network visualization
+    networkVisualization.clearNetwork();
+
+    // Reset the loss chart
+    resetLossChart();
+
+    // Redraw the neural network with default parameters
+    const defaultInputNodes = 2;
+    const defaultHiddenLayers = [3, 2]; // Default hidden layers
+    const defaultOutputNodes = 1;
+
+    const layers = [defaultInputNodes, ...defaultHiddenLayers, defaultOutputNodes];
+
+    networkVisualization.drawNeuralNetwork(layers); // Redraw the network with default values
+});
 // Call the expand logic for the loss display
 handleExpandLossDisplay();
