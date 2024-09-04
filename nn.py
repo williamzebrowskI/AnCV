@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import time
+import numpy as np  # Added for random data generation
 
 class SimpleNeuralNetwork(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -30,6 +31,7 @@ class SimpleNeuralNetwork(nn.Module):
                 loss.backward()
                 backward_time = time.time() - start_time - forward_time
 
+                # Capture forward pass activations and backward pass gradients
                 forward_data = {
                     "input": inputs.tolist(),
                     "hidden_activation": hidden_activation.tolist(),
@@ -42,5 +44,15 @@ class SimpleNeuralNetwork(nn.Module):
                     "backward_time": backward_time
                 }
 
-                callback(epoch, forward_data, backward_data, loss)
+                # Send data to the callback for visualization
+                callback(epoch, forward_data, backward_data, loss.item())
+
                 optimizer.step()
+
+# Function to generate dummy data based on user input
+def generate_dummy_data(num_data_points, input_features, output_size, noise_level):
+    X = np.random.rand(num_data_points, input_features)
+    y = np.sum(X, axis=1, keepdims=True) + noise_level * np.random.randn(num_data_points, output_size)
+    
+    # Convert to torch tensors
+    return [(torch.tensor(x, dtype=torch.float32), torch.tensor(y_, dtype=torch.float32)) for x, y_ in zip(X, y)]
