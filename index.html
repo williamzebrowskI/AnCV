@@ -21,15 +21,41 @@
             left: 10px;
             z-index: 10;
             background-color: rgba(255, 255, 255, 0.8);
-            padding: 10px;
+            padding: 15px;
             border-radius: 8px;
+            width: 250px; /* Set a fixed width */
+        }
+
+        #controls label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #controls input {
+            margin-bottom: 15px;
+            width: 100%;
+            padding: 5px;
+        }
+
+        #controls button {
+            margin-bottom: 10px;
+            width: 100%;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
 
         #visualization {
-            width: 100%;
+            width: calc(100% - 260px); /* Leave space for the controls */
             height: 100%;
             position: relative;
             background-color: #1a1a1a;
+            left: 260px; /* Offset by the controls' width */
         }
 
         #lossDisplay {
@@ -64,40 +90,43 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
+
+    <!-- Left-side controls -->
     <div id="controls">
+        <h3>Neural Network</h3>
         <label for="inputNodes">Input Nodes:</label>
         <input type="number" id="inputNodes" value="3" min="1">
-    
+
         <label for="hiddenLayers">Hidden Layers:</label>
         <input type="text" id="hiddenLayers" value="4,3"> <!-- Comma-separated values for each hidden layer -->
-    
+
         <label for="outputNodes">Output Nodes:</label>
         <input type="number" id="outputNodes" value="1" min="1">
-    
+
+        <h3>Training</h3>
         <label for="epochs">Epochs:</label>
         <input type="number" id="epochs" value="1000" min="1">
-    
+
         <label for="learningRate">Learning Rate:</label>
         <input type="number" id="learningRate" value="0.01" step="0.001" min="0.001">
-    
-        <!-- Add new controls for data complexity -->
+
+        <h3>Data</h3>
         <label for="numDataPoints">Number of Data Points:</label>
         <input type="number" id="numDataPoints" value="10" min="1">
-    
-        <label for="inputFeatures">Number of Input Features:</label>
-        <input type="number" id="inputFeatures" value="3" min="1">
-    
+
         <label for="noiseLevel">Noise Level:</label>
         <input type="number" id="noiseLevel" value="0.1" step="0.01" min="0">
-    
+
         <button id="loadNetworkBtn">Load Neural Network</button>
         <button id="trainNetworkBtn">Train Neural Network</button>
-        <button id="stopTrainingBtn">Stop Training</button> <!-- Stop Training Button -->
+        <button id="stopTrainingBtn">Stop Training</button>
     </div>
 
+    <!-- Neural network diagram area -->
     <div id="visualization"></div>
-    <div id="lossDisplay">Loss: N/A</div>
 
+    <!-- Loss display -->
+    <div id="lossDisplay">Loss: N/A</div>
     <script>
         let stopTraining = false;
         let lossDisplay = document.getElementById("lossDisplay");
@@ -137,7 +166,6 @@
             const epochs = parseInt(document.getElementById('epochs').value);
             const learningRate = parseFloat(document.getElementById('learningRate').value);
             const numDataPoints = parseInt(document.getElementById('numDataPoints').value);
-            const inputFeatures = parseInt(document.getElementById('inputFeatures').value);
             const noiseLevel = parseFloat(document.getElementById('noiseLevel').value);
 
             fetch('http://127.0.0.1:5000/train', {
@@ -152,7 +180,6 @@
                     epochs: epochs,
                     learningRate: learningRate,
                     numDataPoints: numDataPoints,  // Ensure this matches the backend key
-                    inputFeatures: inputFeatures,  // Ensure this matches the backend key
                     noiseLevel: noiseLevel  // Ensure this matches the backend key
                 })
             })
