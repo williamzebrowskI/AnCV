@@ -4,7 +4,7 @@ from nn import SimpleNeuralNetwork
 import torch
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for cross-origin requests
+CORS(app)
 
 @app.route('/train', methods=['POST'])
 def train():
@@ -13,7 +13,7 @@ def train():
     hidden_size = data['hiddenLayers'][0]
     output_size = data['outputNodes']
     epochs = data['epochs']
-    learning_rate = data['learningRate']  # Capture learning rate
+    learning_rate = data['learningRate']
 
     # Dummy data for training
     training_data = [
@@ -29,7 +29,7 @@ def train():
             'epoch': epoch,
             'forward_data': forward_data,
             'backward_data': backward_data,
-            'loss': loss.item()  # Include the loss value
+            'loss': loss.item()
         })
 
     nn.train_network(training_data, epochs, learning_rate=learning_rate, callback=training_callback)
