@@ -30,21 +30,17 @@ class SimpleNeuralNetwork(nn.Module):
                 loss.backward()
                 backward_time = time.time() - start_time - forward_time
 
-                # Capture forward pass activations and backward pass gradients
                 forward_data = {
                     "input": inputs.tolist(),
                     "hidden_activation": hidden_activation.tolist(),
                     "output": outputs.tolist(),
-                    "forward_time": forward_time  # Add this
+                    "forward_time": forward_time
                 }
                 backward_data = {
                     "hidden_grad": self.hidden.weight.grad.abs().tolist(),
                     "output_grad": self.output.weight.grad.abs().tolist(),
-                    "backward_time": backward_time  # Add this
+                    "backward_time": backward_time
                 }
 
-                # Send data to the callback for visualization
-                callback(epoch, forward_data, backward_data)
-                
-
+                callback(epoch, forward_data, backward_data, loss)
                 optimizer.step()
