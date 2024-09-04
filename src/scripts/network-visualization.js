@@ -61,7 +61,8 @@ export function drawNeuralNetwork(layers, weights) {
                     .attr("stroke-width", 2)
                     .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`) // Unique class for each connection
                     .on("mouseover", function () {
-                        d3.select(this).attr("stroke", "yellow").attr("stroke-width", 4);
+                        d3.select(this).attr("stroke", "blue").attr("stroke-width", 4); 
+
                         const tooltip = svg.append("text")
                             .attr("x", (targetNode.x + sourceNode.x) / 2)
                             .attr("y", (targetNode.y + sourceNode.y) / 2 - 10)
@@ -71,7 +72,7 @@ export function drawNeuralNetwork(layers, weights) {
                             .text(`Weight: ${(weight || 0).toFixed(4)}`);
 
                         d3.select(this).on("mouseout", function () {
-                            d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2);
+                            d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2); 
                             tooltip.remove();
                         });
                     });
@@ -191,4 +192,9 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
                 }
             });
     });
+}
+
+// // Function to clear the neural network visualization
+export function clearNetwork() {
+    d3.select("#visualization").html(""); // Clear the SVG area
 }
