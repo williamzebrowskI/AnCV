@@ -13,6 +13,7 @@ def train():
     hidden_size = data['hiddenLayers'][0]  # Simplified to one hidden layer
     output_size = data['outputNodes']
     epochs = data['epochs']
+    learning_rate = data['learningRate']  # Capture learning rate
 
     # Dummy data for training
     training_data = [
@@ -30,7 +31,7 @@ def train():
             'backward_data': backward_data
         })
 
-    nn.train_network(training_data, epochs, learning_rate=0.01, callback=training_callback)
+    nn.train_network(training_data, epochs, learning_rate=learning_rate, callback=training_callback)
 
     return jsonify(training_results)
 
