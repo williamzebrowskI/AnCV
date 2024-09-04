@@ -72,6 +72,34 @@
             font-weight: bold;
             text-align: center;
             cursor: move; /* Show move cursor */
+            transition: width 0.3s ease, height 0.3s ease; /* Smooth expand/collapse transition */
+        }
+
+        #expandBtn {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            background-color: transparent;
+            border: none;
+            font-size: 16px;
+            color: red; /* Red color for the symbols */
+            transform: rotate(45deg); /* Rotate to make it diagonal */
+        }
+
+        /* Original size for the lossDisplay */
+        #lossDisplay {
+            width: 300px; /* Adjust to the original size */
+            height: 175px; /* Adjust to the original size */
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+
+                /* Expanded size for the lossDisplay */
+        #lossDisplay.expanded {
+            width: 600px; /* Expanded width */
+            height: 600px; /* Expanded height */
         }
 
         circle {
@@ -129,6 +157,7 @@
     <!-- Loss display box with canvas for chart -->
     <div id="lossDisplay">
         <canvas id="lossChart"></canvas>
+        <button id="expandBtn"><></button>
     </div>
 
     <script>
@@ -137,6 +166,7 @@
         let lossChartCtx = document.getElementById("lossChart").getContext('2d');
         let isDragging = false;
         let offsetX, offsetY;
+        let expanded = false; // Track the state of expansion
 
         // Make the loss box draggable
         lossDisplay.addEventListener('mousedown', function (event) {
@@ -157,7 +187,21 @@
             isDragging = false;
         });
 
-        // Initialize the loss chart with Chart.js
+        // Expand/Collapse functionality
+        document.getElementById('expandBtn').addEventListener('click', function() {
+            const lossDisplay = document.getElementById('lossDisplay');
+            
+            if (expanded) {
+                lossDisplay.classList.remove('expanded'); // Shrink back to original size
+                this.textContent = '<>'; // Change icon to indicate expandable
+            } else {
+                lossDisplay.classList.add('expanded'); // Expand to double size
+                this.textContent = '<>'; // Change icon to indicate collapsible
+            }
+            
+            expanded = !expanded; // Toggle the state
+        });
+                // Initialize the loss chart with Chart.js
         let lossChart = new Chart(lossChartCtx, {
             type: 'line',
             data: {
