@@ -168,10 +168,27 @@ export function animateBackwardPass(backwardData, svg, duration) {
     });
 }
 
-// Animate the forward or backward pass through each layer
 export function animateLightThroughLayer(node, nextLayerData, duration, svg, direction) {
+    // Ensure the node is defined and has a valid layerIndex
+    if (!node || typeof node.layerIndex === 'undefined') {
+        console.error("Invalid node or missing layerIndex", node);
+        return;
+    }
+
+    // Check if the node is in the last layer
+    if (node.layerIndex >= Math.max(...nodes.map(n => n.layerIndex))) {
+        return;  // Exit the function if there is no next layer
+    }
+
+    // Filter for the nodes in the next layer
     const nextLayerNodes = nodes.filter(n => n.layerIndex === node.layerIndex + 1);
 
+    if (nextLayerNodes.length === 0) {
+        console.warn("No nodes found in the next layer", node.layerIndex + 1);
+        return;  // If there are no nodes in the next layer, exit the function
+    }
+
+    // Animate the connection between this node and the nodes in the next layer
     nextLayerNodes.forEach((targetNode, i) => {
         const light = svg.append("circle")
             .attr("cx", node.x)
@@ -187,13 +204,14 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
             .ease(d3.easeLinear)
             .on("end", function() {
                 d3.select(this).remove();
-                if (direction === "forward" && node.layerIndex < nodes.length - 1) {
+
+                // Ensure targetNode is valid before making a recursive call
+                if (direction === "forward" && targetNode && targetNode.layerIndex < nodes.length - 1) {
                     animateLightThroughLayer(targetNode, nextLayerData, duration, svg, "forward");
                 }
             });
     });
 }
-
 // // Function to clear the neural network visualization
 export function clearNetwork() {
     d3.select("#visualization").html(""); // Clear the SVG area
