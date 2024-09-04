@@ -11,7 +11,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #1a1a1a; /* Dark background */
+            background-color: #1a1a1a;
             font-family: Arial, sans-serif;
         }
 
@@ -29,19 +29,19 @@
             width: 100%;
             height: 100%;
             position: relative;
-            background-color: #1a1a1a; /* Match the body background */
+            background-color: #1a1a1a;
         }
 
         circle {
-            stroke: #ddd; /* Light stroke for neurons */
-            fill: none; /* Hollow circles */
-            stroke-width: 20; /* Increase stroke-width to make the entire area selectable */
-            cursor: pointer; /* Show pointer cursor when hovering over neurons */
-            pointer-events: all; /* Ensure the entire circle is interactive */
+            stroke: #ddd;
+            fill: none;
+            stroke-width: 20;
+            cursor: pointer;
+            pointer-events: all;
         }
 
         line {
-            stroke: #ccc; /* Light stroke for lines */
+            stroke: #ccc;
             stroke-width: 3;
         }
     </style>
@@ -53,7 +53,7 @@
         <input type="number" id="inputNodes" value="3" min="1">
 
         <label for="hiddenLayers">Hidden Layers:</label>
-        <input type="text" id="hiddenLayers" value="4,3"> <!-- Comma-separated values for each hidden layer -->
+        <input type="text" id="hiddenLayers" value="4,3">
 
         <label for="outputNodes">Output Nodes:</label>
         <input type="number" id="outputNodes" value="1" min="1">
@@ -61,13 +61,16 @@
         <label for="epochs">Epochs:</label>
         <input type="number" id="epochs" value="1000" min="1">
 
+        <label for="learningRate">Learning Rate:</label>
+        <input type="number" id="learningRate" value="0.01" step="0.001" min="0.001"> <!-- Learning Rate Input -->
+
         <button id="loadNetworkBtn">Load Neural Network</button>
         <button id="trainNetworkBtn">Train Neural Network</button>
-        <button id="stopTrainingBtn">Stop Training</button> <!-- Stop Training Button -->
+        <button id="stopTrainingBtn">Stop Training</button>
     </div>
     <div id="visualization"></div>
     <script>
-        let stopTraining = false; // Variable to control the training process
+        let stopTraining = false;
 
         document.getElementById('loadNetworkBtn').addEventListener('click', function() {
             const inputNodes = parseInt(document.getElementById('inputNodes').value);
@@ -79,8 +82,9 @@
         });
 
         document.getElementById('trainNetworkBtn').addEventListener('click', function() {
-            stopTraining = false; // Reset stop control before starting training
-            const epochs = parseInt(document.getElementById('epochs').value); // Capture the epoch value
+            stopTraining = false;
+            const epochs = parseInt(document.getElementById('epochs').value);
+            const learningRate = parseFloat(document.getElementById('learningRate').value); // Capture the learning rate
             fetch('http://127.0.0.1:5000/train', {
                 method: 'POST',
                 headers: {
@@ -90,7 +94,8 @@
                     inputNodes: parseInt(document.getElementById('inputNodes').value),
                     hiddenLayers: document.getElementById('hiddenLayers').value.split(',').map(Number),
                     outputNodes: parseInt(document.getElementById('outputNodes').value),
-                    epochs: epochs // Pass the epoch value
+                    epochs: epochs,
+                    learningRate: learningRate // Pass the learning rate value
                 })
             })
             .then(response => response.json())
@@ -99,7 +104,7 @@
         });
 
         document.getElementById('stopTrainingBtn').addEventListener('click', function() {
-            stopTraining = true; // Set the control variable to true to stop training
+            stopTraining = true;
         });
 
         let nodes = [];
@@ -129,9 +134,9 @@
                         .attr("cx", x)
                         .attr("cy", y)
                         .attr("r", nodeRadius)
-                        .style("fill", "none")  // Hollow circles
-                        .style("stroke", "white")  // White stroke
-                        .style("stroke-width", "2")  // Optional: increase the stroke width
+                        .style("fill", "none")
+                        .style("stroke", "white")
+                        .style("stroke-width", "2")
                         .call(d3.drag()
                             .on("start", dragStarted)
                             .on("drag", dragged)
@@ -165,23 +170,23 @@
 
             data.forEach((epochData, epochIndex) => {
                 setTimeout(() => {
-                    if (stopTraining) return; // Stop the animation if the stop button was pressed
+                    if (stopTraining) return;
 
-                    const forwardDuration = epochData.forward_data.forward_time * 30000; // Slow down the forward pass
-                    const backwardDuration = epochData.backward_data.backward_time * 30000; // Slow down the backward pass
+                    const forwardDuration = epochData.forward_data.forward_time * 30000;
+                    const backwardDuration = epochData.backward_data.backward_time * 30000;
 
                     animateForwardPass(epochData.forward_data, svg, forwardDuration);
                     setTimeout(() => {
                         animateBackwardPass(epochData.backward_data, svg, backwardDuration);
-                    }, forwardDuration + 500); // No additional delay before backward pass
-                }, epochIndex * 1000); // Adjust timing between epochs
+                    }, forwardDuration + 500);
+                }, epochIndex * 1000);
             });
         }
 
         function animateForwardPass(forwardData, svg, duration) {
             forwardData.input.forEach((input, index) => {
                 const inputNode = nodes.find(node => node.layerIndex === 0 && node.i === index);
-                animateLightThroughLayer(inputNode, forwardData.hidden_activation, duration * 50, svg, "forward"); // Slower speed
+                animateLightThroughLayer(inputNode, forwardData.hidden_activation, duration * 50, svg, "forward");
             });
         }
 
@@ -190,11 +195,11 @@
             const outputNodes = nodes.filter(node => node.layerIndex === 2);
 
             outputNodes.forEach((outputNode, i) => {
-                animateLightThroughLayer(outputNode, hiddenNodes, duration * 50, svg, "backward"); // Slower speed
+                animateLightThroughLayer(outputNode, hiddenNodes, duration * 50, svg, "backward");
             });
 
             hiddenNodes.forEach((hiddenNode, i) => {
-                animateLightThroughLayer(hiddenNode, nodes.filter(node => node.layerIndex === 0), duration * 50, svg, "backward"); // Slower speed
+                animateLightThroughLayer(hiddenNode, nodes.filter(node => node.layerIndex === 0), duration * 50, svg, "backward");
             });
         }
 
@@ -215,7 +220,7 @@
                     .attr("cy", targetNode.y)
                     .ease(d3.easeLinear)
                     .on("end", function() {
-                        d3.select(this).remove();  // Remove the light once it reaches the target
+                        d3.select(this).remove();
                         if (direction === "forward" && node.layerIndex < nodes.length - 1) {
                             animateLightThroughLayer(targetNode, nextLayerData, duration, svg, "forward");
                         }
@@ -240,7 +245,7 @@
         }
 
         function dragEnded(event, d) {
-            d3.select(this).attr("stroke", "white");  // Restore stroke color after drag
+            d3.select(this).attr("stroke", "white");
         }
 
         function updateConnections(draggedNode) {
