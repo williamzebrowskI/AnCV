@@ -40,54 +40,62 @@ export function drawNeuralNetwork(layers, weights) {
                     .on("end", dragEnded)
                 );
     
-            // Add a debug log to check each node creation
-            // console.log(`Node created: Layer ${layerIndex}, Index ${i}, Node:`, node);
-    
             nodes.push({ layerIndex, i, x, y, node });
         }
     });
 
-    // Draw connections
+    // Draw connections with weights
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex > 0) {
             const prevLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex - 1);
-    
+
             prevLayerNodes.forEach((targetNode, j) => {
+                // Ensure weight retrieval logic is robust
                 const weight = weights && weights[`hidden_weights`] && weights[`hidden_weights`][j]
                     ? weights[`hidden_weights`][j][sourceNode.i]
-                    : 0.5;
+                    : 0.5; // Default weight if undefined
 
-                const line = svg.append("line")
-                    .attr("x1", targetNode.x)
-                    .attr("y1", targetNode.y)
-                    .attr("x2", sourceNode.x)
-                    .attr("y2", sourceNode.y)
-                    .attr("stroke", "#ccc")
-                    .attr("stroke-width", 2)
-                    .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`) // Unique class for each connection
-                    .on("mouseover", function () {
-                        d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4); 
+                // Find or create the line
+                let line = links.find(link => link.source === sourceNode && link.target === targetNode);
+                if (!line) {
+                    // Create new line if it doesn't exist
+                    line = svg.append("line")
+                        .attr("x1", targetNode.x)
+                        .attr("y1", targetNode.y)
+                        .attr("x2", sourceNode.x)
+                        .attr("y2", sourceNode.y)
+                        .attr("stroke", "#ccc")
+                        .attr("stroke-width", 2)
+                        .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`)
+                        .on("mouseover", function () {
+                            // Highlight the line
+                            d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4);
 
-                        const tooltip = svg.append("text")
-                            .attr("x", (targetNode.x + sourceNode.x) / 2)
-                            .attr("y", (targetNode.y + sourceNode.y) / 2 - 10)
-                            .attr("fill", "white")
-                            .attr("font-size", "14px")
-                            .attr("text-anchor", "middle")
-                            .text(`Weight: ${(weight || 0).toFixed(4)}`);
+                            // Display the weight in a tooltip
+                            const tooltip = svg.append("text")
+                                .attr("x", (targetNode.x + sourceNode.x) / 2)
+                                .attr("y", (targetNode.y + sourceNode.y) / 2 - 10)
+                                .attr("fill", "white")
+                                .attr("font-size", "14px")
+                                .attr("text-anchor", "middle")
+                                .text(`Weight: ${(weight || 0).toFixed(4)}`); // Show the weight
 
-                        d3.select(this).on("mouseout", function () {
-                            d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2); 
-                            tooltip.remove();
+                            // Handle mouseout event to reset the line and remove the tooltip
+                            d3.select(this).on("mouseout", function () {
+                                d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2); 
+                                tooltip.remove(); // Remove the tooltip on mouseout
+                            });
                         });
-                    });
 
-                links.push({ source: sourceNode, target: targetNode, line });
+                    links.push({ source: sourceNode, target: targetNode, line });
+                } else {
+                    // Update line attributes dynamically during training
+                    line.attr("stroke", "#ccc").attr("stroke-width", 2);
+                }
             });
         }
     });
 }
-
 // Drag and drop behavior for the nodes
 export function dragStarted(event, d) {
     d3.select(this).raise().attr("stroke", "black");
@@ -132,6 +140,7 @@ export function updateConnections(draggedNode) {
     });
 }
 
+// Adjust the connections and data flow during training
 export function animateDataFlow(data) {
     console.log("Received data in animateDataFlow:", data); // Log the data
     const svg = d3.select("svg");
@@ -156,6 +165,7 @@ export function animateDataFlow(data) {
     });
 }
 
+// Animation for forward pass
 export function animateForwardPass(forwardData, svg, duration) {
     forwardData.input.forEach((input, index) => {
         const inputNode = nodes.find(node => node.layerIndex === 0 && node.i === index);
@@ -169,6 +179,7 @@ export function animateForwardPass(forwardData, svg, duration) {
     });
 }
 
+// Animation for backward pass
 export function animateBackwardPass(backwardData, svg, duration) {
     const hiddenNodes = nodes.filter(node => node.layerIndex === 1);
     const outputNodes = nodes.filter(node => node.layerIndex === 2);
@@ -181,6 +192,7 @@ export function animateBackwardPass(backwardData, svg, duration) {
         animateLightThroughLayer(hiddenNode, nodes.filter(node => node.layerIndex === 0), duration * 50, svg, "backward");
     });
 }
+
 // Function to animate light through the layer without using getPointAtLength
 export function animateLightThroughLayer(node, nextLayerData, duration, svg, direction) {
     // Ensure the node is valid
@@ -210,14 +222,17 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
             return;
         }
 
-        // Create a path (line) between the nodes
-        const path = svg.append("line")
-            .attr("x1", node.x)
-            .attr("y1", node.y)
-            .attr("x2", targetNode.x)
-            .attr("y2", targetNode.y)
-            .attr("stroke", "rgba(255, 255, 255, 0.3)")  // Soft, subtle line
-            .attr("stroke-width", 6);
+        // Create or update the line
+        let path = svg.select(`.line-${node.layerIndex}-${i}-${targetNode.i}`);
+        if (path.empty()) {
+            path = svg.append("line")
+                .attr("x1", node.x)
+                .attr("y1", node.y)
+                .attr("x2", targetNode.x)
+                .attr("y2", targetNode.y)
+                .attr("stroke", "rgba(255, 255, 255, 0.3)")  // Soft, subtle line
+                .attr("stroke-width", 6);
+        }
 
         const light = svg.append("circle")
             .attr("r", 8)
@@ -251,7 +266,8 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
         animateAlongLine(node.x, node.y, targetNode.x, targetNode.y, light, duration);
     });
 }
-// // Function to clear the neural network visualization
+
+// Function to clear the neural network visualization
 export function clearNetwork() {
     d3.select("#visualization").html(""); // Clear the SVG area
     nodes = [];
