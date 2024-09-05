@@ -36,9 +36,16 @@ def train():
     learning_rate = data['learningRate']
     num_data_points = data['numDataPoints']
     noise_level = data['noiseLevel']
+    batch_size = data.get('batchSize', 1) 
 
-    training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level)
+    training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size)
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
+
+        # Define a function to check the stop_training_flag
+    def stop_training_flag_check():
+        global stop_training_flag
+        return stop_training_flag
+
 
     def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss):
         global stop_training_flag
