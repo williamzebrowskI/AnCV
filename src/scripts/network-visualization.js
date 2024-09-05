@@ -54,68 +54,95 @@ export function drawNeuralNetwork(layers, weights) {
                     .on("end", dragEnded)
                 )
                 .on("mouseover", function () {
-                    d3.select(this).style("stroke", "rgba(255, 99, 132, 1)")
-                                   .style("stroke-width", "4px"); // Increase stroke width on hover
-
-                    // Display the "Layer" label for the hovered node
-                    svg.selectAll(".layer-label").remove(); // Clear any existing labels
-                    const label = svg.append("text")
-                        .attr("x", node.attr("cx"))
-                        .attr("y", node.attr("cy") - 25)
+                    d3.select(this).style("stroke", "rgba(255, 99, 132, 1)").style("stroke-width", "4px");
+                
+                    // Display a white box with details on hover
+                    const boxWidth = 120;
+                    const boxHeight = 50;
+                    const boxX = parseFloat(d3.select(this).attr("cx")) - boxWidth / 2;
+                    const boxY = parseFloat(d3.select(this).attr("cy")) - nodeRadius - boxHeight - 10;
+                
+                    // Append the group container for the box and text
+                    const hoverGroup = svg.append("g")
+                        .attr("class", "hover-box");
+                
+                    hoverGroup.append("rect")
+                        .attr("x", boxX)
+                        .attr("y", boxY)
+                        .attr("width", boxWidth)
+                        .attr("height", boxHeight)
                         .attr("fill", "white")
+                        .attr("stroke", "rgba(255, 99, 132, 1)")
+                        .attr("rx", 10)
+                        .attr("ry", 10);
+                
+                    // Create the text label inside the box
+                    hoverGroup.append("text")
+                        .attr("x", boxX + boxWidth / 2)
+                        .attr("y", boxY + 20)
+                        .attr("fill", "black")
                         .attr("font-size", "14px")
-                        .attr("class", "layer-label")
+                        .attr("text-anchor", "middle")
+                        .attr("class", "hover-text")
                         .text(`${layerLabel} Layer`);
-                    
-                    node.data()[0].label = label;  // Attach the label to the node data for later reference
+                
+                    // Add another placeholder text for future details
+                    hoverGroup.append("text")
+                        .attr("x", boxX + boxWidth / 2)
+                        .attr("y", boxY + 40)
+                        .attr("fill", "gray")
+                        .attr("font-size", "12px")
+                        .attr("text-anchor", "middle")
+                        .attr("class", "hover-text")
+                        .text("Details...");
                 })
                 .on("mouseout", function () {
                     if (!d3.select(this).classed("selected")) {
                         d3.select(this).style("stroke", "white"); // Reset stroke color
                         d3.select(this).style("stroke-width", "2px"); // Reset to original stroke width
-                        svg.selectAll(".layer-label").remove();
+                        svg.selectAll(".hover-box").remove(); // Remove the hover group, including box and text
                     }
                 })
-                .on("click", function () {
-                    const node = d3.select(this);
+                // .on("click", function () {
+                //     const node = d3.select(this);
 
-                    if (node.classed("selected")) {
-                        // Deselect the node if clicked again
-                        node.style("stroke", "white")
-                            .style("stroke-width", "2px")
-                            .classed("selected", false);
+                //     if (node.classed("selected")) {
+                //         // Deselect the node if clicked again
+                //         node.style("stroke", "white")
+                //             .style("stroke-width", "2px")
+                //             .classed("selected", false);
 
-                        svg.selectAll(".layer-label").remove();
-                        selectedNodeIndex = null;  // Clear the selection
-                    } else {
-                        // Deselect previous node
-                        if (selectedNode) {
-                            selectedNode.style("stroke", "white")
-                                        .style("stroke-width", "2px")
-                                        .classed("selected", false);
-                        }
+                //         svg.selectAll(".layer-label").remove();
+                //         selectedNodeIndex = null;  // Clear the selection
+                //     } else {
+                //         // Deselect previous node
+                //         if (selectedNode) {
+                //             selectedNode.style("stroke", "white")
+                //                         .style("stroke-width", "2px")
+                //                         .classed("selected", false);
+                //         }
 
-                        // Select the new node
-                        node.style("stroke", "rgba(255, 99, 132, 1)")
-                            .style("stroke-width", "4px")
-                            .classed("selected", true);
+                //         // Select the new node
+                //         node.style("stroke", "rgba(255, 99, 132, 1)")
+                //             .style("stroke-width", "4px")
+                //             .classed("selected", true);
 
-                        selectedNode = node;
-                        selectedNodeIndex = nodes.findIndex(n => n.node.node() === this);  // Store the index
+                //         selectedNode = node;
+                //         selectedNodeIndex = nodes.findIndex(n => n.node === node.node());  // Store the index
 
-                        // Display the "Layer" label for the selected node
-                        svg.selectAll(".layer-label").remove();
-                        svg.append("text")
-                            .attr("x", node.attr("cx"))
-                            .attr("y", node.attr("cy") - 25)
-                            .attr("fill", "white")
-                            .attr("font-size", "14px")
-                            .attr("class", "layer-label")
-                            .text(`${layerLabel} Layer`);
-                    }
-                });
+                //         // Display the "Layer" label for the selected node
+                //         svg.selectAll(".layer-label").remove();
+                //         svg.append("text")
+                //             .attr("x", node.attr("cx"))
+                //             .attr("y", node.attr("cy") - 25)
+                //             .attr("fill", "white")
+                //             .attr("font-size", "14px")
+                //             .attr("class", "layer-label")
+                //             .text(`${layerLabel} Layer`);
+                //     }
+                // });
 
-            nodes.push({ layerIndex, i, x, y, node });
+            nodes.push({ layerIndex, i, x, y, node: node.node() });
         }
     });
 
@@ -177,9 +204,13 @@ export function dragStarted(event, d) {
     d3.select(this).raise().attr("stroke", "black");
 }
 
-// Drag behavior to update label position
 export function dragged(event, d) {
-    const draggedNode = nodes.find(n => n.node.node() === this);
+    const draggedNode = nodes.find(n => n.node === this);
+
+    if (!draggedNode) {
+        console.error("Dragged node not found.");
+        return;
+    }
 
     // Move the node
     d3.select(this)
@@ -193,14 +224,20 @@ export function dragged(event, d) {
     // Update the connections as the node is dragged
     updateConnections(draggedNode);
 
-    // Update the position of the label attached to the node (if it exists)
-    if (draggedNode.node.data()[0].label) {
-        draggedNode.node.data()[0].label
-            .attr("x", event.x)
-            .attr("y", event.y - 25);  // Adjust label to stay above the node
-    }
+    // Ensure the svg reference is captured in the scope of this function
+    const svg = d3.select("#visualization svg");
+    const nodeRadius = 20;  // Define nodeRadius if not globally available
+    const boxWidth = 120;  // Define box width
+    const boxHeight = 50;   // Define box height
 
+    // Move the hover box and text together
+    svg.selectAll(".hover-box rect")
+        .attr("x", event.x - boxWidth / 2)
+        .attr("y", event.y - nodeRadius - boxHeight - 10);
 
+    svg.selectAll(".hover-text")
+        .attr("x", event.x)
+        .attr("y", (d, i) => event.y - nodeRadius - boxHeight - 10 + (i + 1) * 20);
 }
 
 export function dragEnded(event, d) {
