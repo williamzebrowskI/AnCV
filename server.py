@@ -8,11 +8,10 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500"}})
 socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5500"])
 
-stop_training_flag = False  # Global flag to stop the training
+
 
 def reset_network_state():
-    global nn, stop_training_flag
-    stop_training_flag = True  # Ensure training stops when reset is called
+    global nn
     input_size = 5
     hidden_size = 4
     output_size = 1
@@ -25,9 +24,6 @@ def reset_network():
 
 @app.route('/train', methods=['POST'])
 def train():
-    global stop_training_flag
-    stop_training_flag = False  # Reset the stop flag before starting new training
-
     data = request.json
     input_size = data['inputNodes']
     hidden_size = data['hiddenLayers'][0]
@@ -41,19 +37,7 @@ def train():
     training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size)
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
 
-        # Define a function to check the stop_training_flag
-    def stop_training_flag_check():
-        global stop_training_flag
-        return stop_training_flag
-
-
     def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss):
-        global stop_training_flag
-
-        # Stop training if the stop flag is set
-        if stop_training_flag:
-            nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
-            return nn
 
         socketio.emit('training_update', {
             'epoch': epoch,
@@ -77,8 +61,7 @@ def handle_disconnect():
 
 @socketio.on('stop_training')
 def handle_stop_training():
-    global stop_training_flag
-    stop_training_flag = True  # Set flag to true to stop training
+    reset_network_state()
     print('Training stop requested by the client')
 
 if __name__ == '__main__':
