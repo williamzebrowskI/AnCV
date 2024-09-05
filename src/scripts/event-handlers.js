@@ -54,9 +54,14 @@ document.addEventListener('DOMContentLoaded', function() {
     networkVisualization.drawNeuralNetwork(layers, defaultWeights);
 });
 
-// Start training when the user clicks the "Train" button
 document.getElementById('trainNetworkBtn').addEventListener('click', function () {
     stopTraining = false;  // Reset stop flag
+    const trainBtn = document.getElementById('trainNetworkBtn');
+    
+    // Disable the button and add a shaded-out style
+    trainBtn.disabled = true;
+    trainBtn.classList.add('disabled-btn');  // Add the disabled style class
+
     const epochs = parseInt(document.getElementById('epochs').value);
     const learningRate = parseFloat(document.getElementById('learningRate').value);
     const numDataPoints = parseInt(document.getElementById('numDataPoints').value);
@@ -90,8 +95,18 @@ document.getElementById('trainNetworkBtn').addEventListener('click', function ()
         ];
         // Draw final state of the neural network
         networkVisualization.drawNeuralNetwork(layers, weights);
+
+        // Re-enable the button once training is done
+        trainBtn.disabled = false;
+        trainBtn.classList.remove('disabled-btn');  // Remove the disabled style class
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Re-enable the button even if an error occurs
+        trainBtn.disabled = false;
+        trainBtn.classList.remove('disabled-btn');
+    });
 });
 
 // Button event to load network on demand
@@ -108,8 +123,11 @@ document.getElementById('loadNetworkBtn').addEventListener('click', function () 
 
 // Stop training when the "Stop" button is clicked
 document.getElementById('stopTrainingBtn').addEventListener('click', function () {
-    stopTraining = true;  // Stop updating the frontend
-    socket.emit('stop_training');  // Emit event to the backend to stop training
+    stopTraining = true; 
+    socket.emit('stop_training'); 
+    const trainBtn = document.getElementById('trainNetworkBtn');
+    trainBtn.disabled = false;
+    trainBtn.classList.remove('disabled-btn');
 });
 
 // Reset all values and the network when the "Reset" button is clicked
@@ -146,6 +164,11 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     .then(response => response.json())
     .then(data => {
         console.log(data.message);  // Confirmation that the network has been reset
+
+        // Enable the "Train" button after reset
+        const trainBtn = document.getElementById('trainNetworkBtn');
+        trainBtn.disabled = false;
+        trainBtn.classList.remove('disabled-btn');
     })
     .catch(error => console.error('Error resetting network:', error));
 });
