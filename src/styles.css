@@ -93,14 +93,20 @@ html, body {
     height: 100% !important;
 }
 
-circle {
+/* circle {
     stroke: #ddd;
     fill: none;
     stroke-width: 20;
     cursor: pointer;
-}
+} */
 
 line {
     stroke: #ccc;
     stroke-width: 3;
+}
+
+/* Add hover styling to override default */
+line:hover {
+    stroke: blue !important;  /* Ensure the hover style takes priority */
+    stroke-width: 4 !important;
 }
