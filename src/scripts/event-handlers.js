@@ -118,15 +118,15 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     document.getElementById('inputNodes').value = 5;
     document.getElementById('hiddenLayers').value = '4,3';
     document.getElementById('outputNodes').value = 1;
-    document.getElementById('epochs').value = 1000;
-    document.getElementById('learningRate').value = 0.0001;
+    document.getElementById('epochs').value = 100;
+    document.getElementById('learningRate').value = 0.001;
     document.getElementById('numDataPoints').value = 100;
     document.getElementById('noiseLevel').value = 0.1;
 
     // Reset the loss chart
     resetLossChart();
 
-    stopTraining = true;  // Stop the training
+    stopTraining = true;
 
     // Clear the network visualization and its state
     networkVisualization.clearNetwork();
