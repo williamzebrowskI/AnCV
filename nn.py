@@ -21,6 +21,7 @@ class SimpleNeuralNetwork(nn.Module):
 
         for epoch in range(epochs):
             for inputs, targets in data:
+                time.sleep(0.5)
                 start_time = time.time()
 
                 optimizer.zero_grad()
