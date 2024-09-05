@@ -129,8 +129,8 @@ socket.on('training_stopped', function(data) {
 });
 // Reset all values and the network when the "Reset" button is clicked
 document.getElementById('resetAllBtn').addEventListener('click', function () {
-    document.getElementById('inputNodes').value = 5;
-    document.getElementById('hiddenLayers').value = '4,3';
+    document.getElementById('inputNodes').value = 4;
+    document.getElementById('hiddenLayers').value = '3,2';
     document.getElementById('outputNodes').value = 1;
     document.getElementById('epochs').value = 100;
     document.getElementById('learningRate').value = 0.001;
@@ -143,8 +143,8 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
 
     networkVisualization.clearNetwork();
 
-    const defaultInputNodes = 5;
-    const defaultHiddenLayers = [4, 3];
+    const defaultInputNodes = 4;
+    const defaultHiddenLayers = [3, 2];
     const defaultOutputNodes = 1;
     const layers = [defaultInputNodes, ...defaultHiddenLayers, defaultOutputNodes];
 
