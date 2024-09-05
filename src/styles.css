@@ -101,6 +101,6 @@ line {
 
 /* Add hover styling to override default */
 line:hover {
-    stroke: blue !important;  /* Ensure the hover style takes priority */
+    stroke: rgba(255, 99, 132, 1) !important;  /* Ensure the hover style takes priority */
     stroke-width: 4 !important;
 }
