@@ -21,7 +21,7 @@ class SimpleNeuralNetwork(nn.Module):
 
         for epoch in range(epochs):
             for inputs, targets in data:
-                time.sleep(1)
+                time.sleep(0.5)
                 start_time = time.time()
 
                 optimizer.zero_grad()
@@ -56,7 +56,7 @@ class SimpleNeuralNetwork(nn.Module):
 
                 optimizer.step()
 
-def generate_dummy_data(num_data_points, input_size, output_size, noise_level):
+def generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size=1):
     # Generate input data as a 2D array with shape (num_data_points, input_size)
     X = np.random.rand(num_data_points, input_size)
 
@@ -64,4 +64,12 @@ def generate_dummy_data(num_data_points, input_size, output_size, noise_level):
     y = np.sum(X, axis=1, keepdims=True) + noise_level * np.random.randn(num_data_points, output_size)
     
     # Convert to torch tensors
-    return [(torch.tensor(x, dtype=torch.float32), torch.tensor(y_, dtype=torch.float32)) for x, y_ in zip(X, y)]
+    X_tensor = torch.tensor(X, dtype=torch.float32)
+    y_tensor = torch.tensor(y, dtype=torch.float32)
+    
+    print(f"Batch Size: {batch_size}")
+    # Group data into batches
+    data = [(X_tensor[i:i + batch_size], y_tensor[i:i + batch_size])
+            for i in range(0, num_data_points, batch_size)]
+    
+    return data
