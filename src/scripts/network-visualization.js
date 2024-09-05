@@ -47,11 +47,13 @@ export function drawNeuralNetwork(layers, weights) {
                 .on("mouseover", function () {
                     if (!d3.select(this).classed("selected")) {
                         d3.select(this).style("stroke", "rgba(255, 99, 132, 1)"); // Hover color
+                        d3.select(this).style("stroke-width", "4px"); // Increase stroke width on hover
                     }
                 })
                 .on("mouseout", function () {
                     if (!d3.select(this).classed("selected")) {
-                        d3.select(this).style("stroke", "white"); // Reset to original if not selected
+                        d3.select(this).style("stroke", "white"); // Reset stroke color
+                        d3.select(this).style("stroke-width", "2px"); // Reset to original stroke width
                     }
                 })
                 .on("click", function () {
