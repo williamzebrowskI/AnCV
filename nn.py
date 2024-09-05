@@ -7,8 +7,8 @@ import numpy as np
 class SimpleNeuralNetwork(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(SimpleNeuralNetwork, self).__init__()
-        self.hidden = nn.Linear(input_size, hidden_size)
-        self.output = nn.Linear(hidden_size, output_size)
+        self.hidden = nn.Linear(input_size, hidden_size)  # This is input-to-hidden weights
+        self.output = nn.Linear(hidden_size, output_size)  # This is hidden-to-output weights
 
     def forward(self, x):
         hidden_activation = torch.relu(self.hidden(x))
@@ -24,7 +24,6 @@ class SimpleNeuralNetwork(nn.Module):
             batch_count = 0  # Initialize batch counter
             
             for inputs, targets in data:
-
                 time.sleep(0.05)  # Simulate delay
                 
                 start_time = time.time()
@@ -58,7 +57,8 @@ class SimpleNeuralNetwork(nn.Module):
                     "backward_time": backward_time
                 }
                 weights_biases_data = {
-                    "hidden_weights": self.hidden.weight.detach().tolist(),
+                    "input_weights": self.hidden.weight.detach().tolist(),  # Capture input-to-hidden weights
+                    "hidden_weights": self.output.weight.detach().tolist(),  # Hidden-to-output weights
                     "hidden_biases": self.hidden.bias.detach().tolist(),
                     "output_weights": self.output.weight.detach().tolist(),
                     "output_biases": self.output.bias.detach().tolist()
