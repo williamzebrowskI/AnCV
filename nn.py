@@ -25,11 +25,11 @@ class SimpleNeuralNetwork(nn.Module):
             
             for inputs, targets in data:
 
-                time.sleep(0.5)
+                time.sleep(0.05)  # Simulate delay
                 
                 start_time = time.time()
-                optimizer.zero_grad()
-                
+                optimizer.zero_grad()  # Reset gradients
+
                 # Forward pass
                 outputs, hidden_activation = self.forward(inputs)
                 forward_time = time.time() - start_time
@@ -37,7 +37,7 @@ class SimpleNeuralNetwork(nn.Module):
                 # Compute the loss
                 loss = criterion(outputs, targets)
                 loss.backward()  # Backpropagation
-                
+
                 # Add the batch loss to the total epoch loss
                 epoch_loss += loss.item()
                 batch_count += 1
@@ -64,16 +64,13 @@ class SimpleNeuralNetwork(nn.Module):
                     "output_biases": self.output.bias.detach().tolist()
                 }
 
-                # Emit progress after every batch
-                callback(epoch, forward_data, backward_data, weights_biases_data, loss.item())
-
                 optimizer.step()  # Update the weights
 
             # Compute the average loss for the epoch
             avg_epoch_loss = epoch_loss / batch_count
             print(f"Epoch: {epoch + 1}/{epochs}, Average Loss: {avg_epoch_loss}")
 
-            # Emit progress after every epoch (can also be after every batch, depending on your requirement)
+            # Emit the callback only after the entire epoch (not after every batch)
             callback(epoch, forward_data, backward_data, weights_biases_data, avg_epoch_loss)
 
 def generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size=1):
