@@ -4,6 +4,7 @@ import { stopTraining } from './event-handlers.js';
 let nodes = []; // Keep this global to track all nodes for connections
 let links = []; // Global array to track connections/links between nodes
 let selectedNode = null; // Track the selected node
+let selectedNodeIndex = null;  // Track the index of the selected node
 
 export function drawNeuralNetwork(layers, weights) {
     console.log("Received weights:", weights);
@@ -17,6 +18,9 @@ export function drawNeuralNetwork(layers, weights) {
 
     const layerSpacing = width / (layers.length + 1);
     const nodeRadius = 20;
+
+    let selectedNode = null;  // Track the currently selected node
+    let selectedNodeIndex = null;  // Track the index of the selected node
 
     nodes = []; // Clear the global nodes array before redrawing
     links = []; // Clear the global links array before redrawing
@@ -53,34 +57,32 @@ export function drawNeuralNetwork(layers, weights) {
                 .on("click", function () {
                     const node = d3.select(this);
                     
-                    // If the node is already selected, deselect it
                     if (node.classed("selected")) {
-                        node.style("stroke", "white")      // Reset stroke color
-                            .style("stroke-width", "2px")  // Reset stroke thickness
-                            .classed("selected", false);   // Deselect the node
+                        // Deselect the node if clicked again
+                        node.style("stroke", "white")
+                            .style("stroke-width", "2px")
+                            .classed("selected", false);
                         
-                        // Remove the label if it exists
                         svg.selectAll(".layer-label").remove();
-                        
-                        // Reset selectedNode to null since no node is selected
-                        selectedNode = null;
+                        selectedNodeIndex = null;  // Clear the selection
                     } else {
-                        // Deselect the previous node (if any)
+                        // Deselect previous node
                         if (selectedNode) {
                             selectedNode.style("stroke", "white")
-                                        .style("stroke-width", "2px")  // Reset stroke thickness of the previously selected node
+                                        .style("stroke-width", "2px")
                                         .classed("selected", false);
                         }
                         
-                        // Select the current node
-                        node.style("stroke", "rgba(255, 99, 132, 1)")  // Change stroke color to highlight
-                            .style("stroke-width", "4px")              // Increase stroke thickness for better visibility
+                        // Select the new node
+                        node.style("stroke", "rgba(255, 99, 132, 1)")
+                            .style("stroke-width", "4px")
                             .classed("selected", true);
                         
                         selectedNode = node;
+                        selectedNodeIndex = nodes.findIndex(n => n.node.node() === this);  // Store the index
                         
-                        // Display a "Layer" label near the selected node
-                        svg.selectAll(".layer-label").remove(); // Remove any previous label
+                        // Display the "Layer" label for the selected node
+                        svg.selectAll(".layer-label").remove();
                         svg.append("text")
                             .attr("x", node.attr("cx"))
                             .attr("y", node.attr("cy") - 25)
@@ -94,6 +96,7 @@ export function drawNeuralNetwork(layers, weights) {
             nodes.push({ layerIndex, i, x, y, node });
         }
     });
+
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex < layers.length - 1) {
             const nextLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex + 1);
@@ -183,7 +186,6 @@ export function updateConnections(draggedNode) {
     });
 }
 
-// Adjust the connections and data flow during training
 export function animateDataFlow(data) {
     console.log("Received data in animateDataFlow:", data); // Log the data
     const svg = d3.select("svg");
@@ -206,6 +208,24 @@ export function animateDataFlow(data) {
 
         updateLossChart(epochData.epoch, epochData.loss);
     });
+
+    // Reapply selection styling after each epoch
+    if (selectedNodeIndex !== null) {
+        const selectedNode = nodes[selectedNodeIndex];
+        d3.select(selectedNode.node)
+            .style("stroke", "rgba(255, 99, 132, 1)")
+            .style("stroke-width", "4px");
+
+        // Reapply the label
+        svg.selectAll(".layer-label").remove();  // Remove any existing label
+        svg.append("text")
+            .attr("x", selectedNode.x)
+            .attr("y", selectedNode.y - 25)
+            .attr("fill", "white")
+            .attr("font-size", "14px")
+            .attr("class", "layer-label")
+            .text("Layer");
+    }
 }
 
 // Animation for forward pass
