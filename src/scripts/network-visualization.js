@@ -51,9 +51,11 @@ export function drawNeuralNetwork(layers, weights) {
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex > 0) {
             const prevLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex - 1);
-
+    
             prevLayerNodes.forEach((targetNode, j) => {
-                const weight = weights && weights[`hidden_weights`] && weights[`hidden_weights`][j] ? weights[`hidden_weights`][j][sourceNode.i] : 0.5;
+                const weight = weights && weights[`hidden_weights`] && weights[`hidden_weights`][j]
+                    ? weights[`hidden_weights`][j][sourceNode.i]
+                    : 0.5;
 
                 const line = svg.append("line")
                     .attr("x1", targetNode.x)
@@ -64,7 +66,7 @@ export function drawNeuralNetwork(layers, weights) {
                     .attr("stroke-width", 2)
                     .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`) // Unique class for each connection
                     .on("mouseover", function () {
-                        d3.select(this).attr("stroke", "red").attr("stroke-width", 4); 
+                        d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4); 
 
                         const tooltip = svg.append("text")
                             .attr("x", (targetNode.x + sourceNode.x) / 2)
