@@ -3,6 +3,42 @@ import { updateLossChart, resetLossChart, handleExpandLossDisplay } from './char
 
 export let stopTraining = false;
 
+// Create the WebSocket connection to the server
+var socket = io.connect('http://127.0.0.1:5000');
+
+// Handle WebSocket connection established
+socket.on('connect', function() {
+    console.log("WebSocket connection established");
+});
+
+// Handle WebSocket disconnection
+socket.on('disconnect', function() {
+    console.log("Disconnected from WebSocket server");
+});
+
+// Listen for real-time training updates via WebSocket
+socket.on('training_update', function(data) {
+    if (stopTraining) return;  // Stop updating the UI if training has stopped
+
+    console.log('Training update received:', data);
+
+    // Update the UI with training data (e.g., updating a loss chart)
+    updateLossChart(data.epoch, data.loss);  // Assuming this function exists to update the loss chart
+
+    const layers = [
+        parseInt(document.getElementById('inputNodes').value),
+        ...document.getElementById('hiddenLayers').value.split(',').map(Number),
+        parseInt(document.getElementById('outputNodes').value)
+    ];
+
+    // Update the neural network visualization with the new weights/biases
+    networkVisualization.drawNeuralNetwork(layers, data.weights_biases_data);
+
+    // Optionally, animate the forward and backward pass using the data
+    networkVisualization.animateDataFlow(data);
+});
+
+// Handle document load event to set initial visualization
 document.addEventListener('DOMContentLoaded', function() {
     // Set default values for the neural network
     const inputNodes = parseInt(document.getElementById('inputNodes').value);
@@ -18,8 +54,9 @@ document.addEventListener('DOMContentLoaded', function() {
     networkVisualization.drawNeuralNetwork(layers, defaultWeights);
 });
 
+// Start training when the user clicks the "Train" button
 document.getElementById('trainNetworkBtn').addEventListener('click', function () {
-    stopTraining = false;
+    stopTraining = false;  // Reset stop flag
     const epochs = parseInt(document.getElementById('epochs').value);
     const learningRate = parseFloat(document.getElementById('learningRate').value);
     const numDataPoints = parseInt(document.getElementById('numDataPoints').value);
@@ -42,12 +79,15 @@ document.getElementById('trainNetworkBtn').addEventListener('click', function ()
     })
     .then(response => response.json())
     .then(data => {
+        console.log("Training completed:", data);
         const weights = data[data.length - 1].weights_biases_data;
-        const layers = [parseInt(document.getElementById('inputNodes').value), 
-                        ...document.getElementById('hiddenLayers').value.split(',').map(Number), 
-                        parseInt(document.getElementById('outputNodes').value)];
+        const layers = [
+            parseInt(document.getElementById('inputNodes').value), 
+            ...document.getElementById('hiddenLayers').value.split(',').map(Number), 
+            parseInt(document.getElementById('outputNodes').value)
+        ];
+        // Draw final state of the neural network
         networkVisualization.drawNeuralNetwork(layers, weights);
-        networkVisualization.animateDataFlow(data);
     })
     .catch(error => console.error('Error:', error));
 });
@@ -64,10 +104,13 @@ document.getElementById('loadNetworkBtn').addEventListener('click', function () 
     networkVisualization.drawNeuralNetwork(layers); // Pass null or replace with actual weights
 });
 
+// Stop training when the "Stop" button is clicked
 document.getElementById('stopTrainingBtn').addEventListener('click', function () {
-    stopTraining = true;
+    stopTraining = true;  // Stop updating the frontend
+    socket.emit('stop_training');  // Emit event to the backend to stop training
 });
 
+// Reset all values and the network when the "Reset" button is clicked
 document.getElementById('resetAllBtn').addEventListener('click', function () {
     // Reset input fields to default values
     document.getElementById('inputNodes').value = 5;
@@ -81,7 +124,7 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     // Reset the loss chart
     resetLossChart();
 
-    stopTraining = true; // Stop the training
+    stopTraining = true;  // Stop the training
 
     // Clear the network visualization and its state
     networkVisualization.clearNetwork();
@@ -104,5 +147,6 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     })
     .catch(error => console.error('Error resetting network:', error));
 });
-// Call the expand logic for the loss display
+
+// Handle expanding logic for the loss display
 handleExpandLossDisplay();
