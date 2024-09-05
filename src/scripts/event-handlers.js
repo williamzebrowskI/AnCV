@@ -61,6 +61,7 @@ document.getElementById('trainNetworkBtn').addEventListener('click', function ()
     const learningRate = parseFloat(document.getElementById('learningRate').value);
     const numDataPoints = parseInt(document.getElementById('numDataPoints').value);
     const noiseLevel = parseFloat(document.getElementById('noiseLevel').value);
+    const batchSize = parseInt(document.getElementById('batchSize').value);
 
     fetch('http://127.0.0.1:5000/train', {
         method: 'POST',
@@ -74,7 +75,8 @@ document.getElementById('trainNetworkBtn').addEventListener('click', function ()
             epochs: epochs,
             learningRate: learningRate,
             numDataPoints: numDataPoints,
-            noiseLevel: noiseLevel
+            noiseLevel: noiseLevel,
+            batchSize: batchSize 
         })
     })
     .then(response => response.json())
