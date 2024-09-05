@@ -64,7 +64,7 @@ export function drawNeuralNetwork(layers, weights) {
                     .attr("stroke-width", 2)
                     .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`) // Unique class for each connection
                     .on("mouseover", function () {
-                        d3.select(this).attr("stroke", "blue").attr("stroke-width", 4); 
+                        d3.select(this).attr("stroke", "red").attr("stroke-width", 4); 
 
                         const tooltip = svg.append("text")
                             .attr("x", (targetNode.x + sourceNode.x) / 2)
@@ -215,13 +215,13 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
             .attr("x2", targetNode.x)
             .attr("y2", targetNode.y)
             .attr("stroke", "rgba(255, 255, 255, 0.3)")  // Soft, subtle line
-            .attr("stroke-width", 2);
+            .attr("stroke-width", 6);
 
         const light = svg.append("circle")
             .attr("r", 8)
-            .attr("fill", "rgba(0, 191, 255, 1.5)")  // Bright blue color for the light
-            .style("stroke", "rgba(0, 128, 255, 0.7)")  // Lighter blue stroke for glow effect
-            .style("stroke-width", 4);
+            .attr("fill", "rgba(255, 255, 255, 0.9)")  // Bright white color for the light
+            .style("stroke", "rgba(200, 200, 200, 0.7)")  // Light gray stroke for a soft glow
+            .style("stroke-width", 6);  // Glow effect with a wider stroke
 
         // Function to manually interpolate the light along the line
         const animateAlongLine = (startX, startY, endX, endY, light, duration) => {
