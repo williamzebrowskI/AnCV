@@ -39,6 +39,8 @@ let lossChart = new Chart(lossChartCtx, {
 export function updateLossChart(epoch, loss) {
     lossChart.data.labels.push(epoch);
     lossChart.data.datasets[0].data.push(loss);
+    const lossValueElement = document.getElementById('lossValue');
+    lossValueElement.textContent = `Loss: ${loss.toFixed(4)}`; 
     lossChart.update();
 }
 
@@ -61,4 +63,6 @@ export function resetLossChart() {
     lossChart.data.labels = [];
     lossChart.data.datasets[0].data = [];
     lossChart.update();
+    const lossValueElement = document.getElementById('lossValue');
+    lossValueElement.textContent = '';  // Clear the displayed loss value
 }

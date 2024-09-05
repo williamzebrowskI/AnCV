@@ -54,46 +54,55 @@ document.addEventListener('DOMContentLoaded', function() {
     networkVisualization.drawNeuralNetwork(layers, defaultWeights);
 });
 
-// Start training when the user clicks the "Train" button
 document.getElementById('trainNetworkBtn').addEventListener('click', function () {
     stopTraining = false;  // Reset stop flag
+    const trainBtn = document.getElementById('trainNetworkBtn');
+
+    trainBtn.disabled = true;  // Disable the button
+    trainBtn.classList.add('disabled-btn');  // Add the class for visual effect
+
     const epochs = parseInt(document.getElementById('epochs').value);
     const learningRate = parseFloat(document.getElementById('learningRate').value);
     const numDataPoints = parseInt(document.getElementById('numDataPoints').value);
     const noiseLevel = parseFloat(document.getElementById('noiseLevel').value);
     const batchSize = parseInt(document.getElementById('batchSize').value);
 
-    fetch('http://127.0.0.1:5000/train', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            inputNodes: parseInt(document.getElementById('inputNodes').value),
-            hiddenLayers: document.getElementById('hiddenLayers').value.split(',').map(Number),
-            outputNodes: parseInt(document.getElementById('outputNodes').value),
-            epochs: epochs,
-            learningRate: learningRate,
-            numDataPoints: numDataPoints,
-            noiseLevel: noiseLevel,
-            batchSize: batchSize 
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Training completed:", data);
-        const weights = data[data.length - 1].weights_biases_data;
-        const layers = [
-            parseInt(document.getElementById('inputNodes').value), 
-            ...document.getElementById('hiddenLayers').value.split(',').map(Number), 
-            parseInt(document.getElementById('outputNodes').value)
-        ];
-        // Draw final state of the neural network
-        networkVisualization.drawNeuralNetwork(layers, weights);
-    })
-    .catch(error => console.error('Error:', error));
-});
+    // Emit the training data to the backend via socket
+    socket.emit('start_training', {
+        inputNodes: parseInt(document.getElementById('inputNodes').value),
+        hiddenLayers: document.getElementById('hiddenLayers').value.split(',').map(Number),
+        outputNodes: parseInt(document.getElementById('outputNodes').value),
+        epochs: epochs,
+        learningRate: learningRate,
+        numDataPoints: numDataPoints,
+        noiseLevel: noiseLevel,
+        batchSize: batchSize
+    });
 
+    // Listen for the response when training starts
+    socket.on('training_started', function(data) {
+        console.log(data.message);
+    });
+
+    // Listen for updates during training
+    socket.on('training_update', function(update) {
+        console.log("Training update:", update);
+        // You can process the update here, such as drawing the neural network or updating the chart
+    });
+
+    // Re-enable the "Train" button after training is completed (or in the stop handler)
+    socket.on('training_completed', function() {
+        trainBtn.disabled = false;
+        trainBtn.classList.remove('disabled-btn');
+    });
+
+    // Handle errors or stop signal
+    socket.on('training_error', function(error) {
+        console.error('Training error:', error);
+        trainBtn.disabled = false;
+        trainBtn.classList.remove('disabled-btn');
+    });
+});
 // Button event to load network on demand
 document.getElementById('loadNetworkBtn').addEventListener('click', function () {
     const inputNodes = parseInt(document.getElementById('inputNodes').value);
@@ -106,15 +115,20 @@ document.getElementById('loadNetworkBtn').addEventListener('click', function () 
     networkVisualization.drawNeuralNetwork(layers); // Pass null or replace with actual weights
 });
 
-// Stop training when the "Stop" button is clicked
 document.getElementById('stopTrainingBtn').addEventListener('click', function () {
-    stopTraining = true;  // Stop updating the frontend
-    socket.emit('stop_training');  // Emit event to the backend to stop training
+    stopTraining = true;
+    socket.emit('stop_training'); 
+
+    const trainBtn = document.getElementById('trainNetworkBtn');
+    trainBtn.disabled = false;
+    trainBtn.classList.remove('disabled-btn');
 });
 
+socket.on('training_stopped', function(data) {
+    console.log(data.message); 
+});
 // Reset all values and the network when the "Reset" button is clicked
 document.getElementById('resetAllBtn').addEventListener('click', function () {
-    // Reset input fields to default values
     document.getElementById('inputNodes').value = 5;
     document.getElementById('hiddenLayers').value = '4,3';
     document.getElementById('outputNodes').value = 1;
@@ -123,15 +137,12 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     document.getElementById('numDataPoints').value = 100;
     document.getElementById('noiseLevel').value = 0.1;
 
-    // Reset the loss chart
     resetLossChart();
 
     stopTraining = true;
 
-    // Clear the network visualization and its state
     networkVisualization.clearNetwork();
 
-    // Redraw the neural network with default parameters
     const defaultInputNodes = 5;
     const defaultHiddenLayers = [4, 3];
     const defaultOutputNodes = 1;
@@ -146,6 +157,11 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     .then(response => response.json())
     .then(data => {
         console.log(data.message);  // Confirmation that the network has been reset
+
+        // Enable the "Train" button after reset
+        const trainBtn = document.getElementById('trainNetworkBtn');
+        trainBtn.disabled = false;
+        trainBtn.classList.remove('disabled-btn');
     })
     .catch(error => console.error('Error resetting network:', error));
 });

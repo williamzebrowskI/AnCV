@@ -79,7 +79,7 @@ html, body {
     background-color: transparent;
     border: none;
     font-size: 16px;
-    color: red;
+    color: rgba(255, 99, 132, 1);
     transform: rotate(45deg);
 }
 
@@ -91,4 +91,20 @@ html, body {
 #lossDisplay canvas {
     width: 100% !important;
     height: 100% !important;
+}
+
+.loss-value {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 14px;
+    color: rgba(255, 99, 132, 1);  /* Matches the chart color */
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+}
+
+.disabled-btn {
+    background-color: #ccc;  /* Shaded-out look */
+    cursor: not-allowed;     /* Not-allowed cursor */
+    opacity: 0.6;            /* Semi-transparent */
 }
