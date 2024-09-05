@@ -19,27 +19,28 @@ export function drawNeuralNetwork(layers, weights) {
     nodes = []; // Clear the global nodes array before redrawing
     links = []; // Clear the global links array before redrawing
 
-    // Draw nodes
     layers.forEach((layerSize, layerIndex) => {
         const x = layerSpacing * (layerIndex + 1);
         const ySpacing = height / (layerSize + 1);
-
+    
         for (let i = 0; i < layerSize; i++) {
             const y = ySpacing * (i + 1);
-
+    
             const node = svg.append("circle")
-            .attr("cx", x)
-            .attr("cy", y)
-            .attr("r", nodeRadius)
-            .style("fill", "rgba(255, 255, 255, 0.1)") // Make the entire circle clickable
-            .style("stroke", "white")
-            .style("stroke-width", "2")
-            .call(d3.drag()
-                .on("start", dragStarted)
-                .on("drag", dragged)
-                .on("end", dragEnded)
-            );
-
+                .attr("cx", x)
+                .attr("cy", y)
+                .attr("r", nodeRadius)
+                .style("fill", "rgba(255, 255, 255, 0.1)")
+                .style("stroke", "white")
+                .style("stroke-width", "2")
+                .call(d3.drag()
+                    .on("start", dragStarted)
+                    .on("drag", dragged)
+                    .on("end", dragEnded)
+                );
+    
+            console.log(`Node created: Layer ${layerIndex}, Index ${i}`); // Log the creation of each node
+    
             nodes.push({ layerIndex, i, x, y, node });
         }
     });
@@ -178,8 +179,11 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
         return;
     }
 
+    console.log("Animating node with layerIndex:", node.layerIndex); // Log the node layer index for tracing
+
     // Check if the node is in the last layer
     if (node.layerIndex >= Math.max(...nodes.map(n => n.layerIndex))) {
+        console.warn("Node is in the last layer, no further layers to animate.");
         return;  // Exit the function if there is no next layer
     }
 
@@ -193,11 +197,16 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
 
     // Animate the connection between this node and the nodes in the next layer
     nextLayerNodes.forEach((targetNode, i) => {
+        if (!targetNode || typeof targetNode.layerIndex === 'undefined') {
+            console.error("Invalid target node or missing layerIndex", targetNode);
+            return;
+        }
+
         const light = svg.append("circle")
             .attr("cx", node.x)
             .attr("cy", node.y)
-            .attr("r", 5)
-            .style("fill", "yellow")
+            .attr("r", 15)
+            .style("fill", "white")
             .style("opacity", 1);
 
         light.transition()
