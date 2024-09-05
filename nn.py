@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import time
-import numpy as np  # Added for random data generation
+import numpy as np
 
 class SimpleNeuralNetwork(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -20,16 +20,29 @@ class SimpleNeuralNetwork(nn.Module):
         optimizer = optim.SGD(self.parameters(), lr=learning_rate)
 
         for epoch in range(epochs):
+            epoch_loss = 0  # Initialize epoch loss
+            batch_count = 0  # Initialize batch counter
+            
             for inputs, targets in data:
-                time.sleep(0.5)
-                start_time = time.time()
 
+                time.sleep(0.5)
+                
+                start_time = time.time()
                 optimizer.zero_grad()
+                
+                # Forward pass
                 outputs, hidden_activation = self.forward(inputs)
                 forward_time = time.time() - start_time
 
+                # Compute the loss
                 loss = criterion(outputs, targets)
-                loss.backward()
+                loss.backward()  # Backpropagation
+                
+                # Add the batch loss to the total epoch loss
+                epoch_loss += loss.item()
+                batch_count += 1
+
+                # Backward pass timing
                 backward_time = time.time() - start_time - forward_time
 
                 # Capture forward pass activations, backward pass gradients, and weights/biases
@@ -51,10 +64,17 @@ class SimpleNeuralNetwork(nn.Module):
                     "output_biases": self.output.bias.detach().tolist()
                 }
 
-                # Send data to the callback for visualization
+                # Emit progress after every batch
                 callback(epoch, forward_data, backward_data, weights_biases_data, loss.item())
 
-                optimizer.step()
+                optimizer.step()  # Update the weights
+
+            # Compute the average loss for the epoch
+            avg_epoch_loss = epoch_loss / batch_count
+            print(f"Epoch: {epoch + 1}/{epochs}, Average Loss: {avg_epoch_loss}")
+
+            # Emit progress after every epoch (can also be after every batch, depending on your requirement)
+            callback(epoch, forward_data, backward_data, weights_biases_data, avg_epoch_loss)
 
 def generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size=1):
     # Generate input data as a 2D array with shape (num_data_points, input_size)
@@ -66,8 +86,6 @@ def generate_dummy_data(num_data_points, input_size, output_size, noise_level, b
     # Convert to torch tensors
     X_tensor = torch.tensor(X, dtype=torch.float32)
     y_tensor = torch.tensor(y, dtype=torch.float32)
-    
-    print(f"Batch Size: {batch_size}")
     # Group data into batches
     data = [(X_tensor[i:i + batch_size], y_tensor[i:i + batch_size])
             for i in range(0, num_data_points, batch_size)]
