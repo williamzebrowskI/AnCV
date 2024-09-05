@@ -5,6 +5,7 @@ let nodes = []; // Keep this global to track all nodes for connections
 let links = []; // Global array to track connections/links between nodes
 
 export function drawNeuralNetwork(layers, weights) {
+    console.log("Received weights:", weights);
     d3.select("#visualization").html(""); // Clear previous SVG
 
     const width = window.innerWidth;
@@ -39,7 +40,8 @@ export function drawNeuralNetwork(layers, weights) {
                     .on("end", dragEnded)
                 );
     
-            console.log(`Node created: Layer ${layerIndex}, Index ${i}`); // Log the creation of each node
+            // Add a debug log to check each node creation
+            // console.log(`Node created: Layer ${layerIndex}, Index ${i}, Node:`, node);
     
             nodes.push({ layerIndex, i, x, y, node });
         }
@@ -155,6 +157,12 @@ export function animateDataFlow(data) {
 export function animateForwardPass(forwardData, svg, duration) {
     forwardData.input.forEach((input, index) => {
         const inputNode = nodes.find(node => node.layerIndex === 0 && node.i === index);
+        
+        if (!inputNode) {
+            console.warn(`Input node not found for index ${index}`);
+            return;
+        }
+        
         animateLightThroughLayer(inputNode, forwardData.hidden_activation, duration * 50, svg, "forward");
     });
 }
@@ -171,15 +179,13 @@ export function animateBackwardPass(backwardData, svg, duration) {
         animateLightThroughLayer(hiddenNode, nodes.filter(node => node.layerIndex === 0), duration * 50, svg, "backward");
     });
 }
-
+// Function to animate light through the layer without using getPointAtLength
 export function animateLightThroughLayer(node, nextLayerData, duration, svg, direction) {
-    // Ensure the node is defined and has a valid layerIndex
+    // Ensure the node is valid
     if (!node || typeof node.layerIndex === 'undefined') {
         console.error("Invalid node or missing layerIndex", node);
         return;
     }
-
-    console.log("Animating node with layerIndex:", node.layerIndex); // Log the node layer index for tracing
 
     // Check if the node is in the last layer
     if (node.layerIndex >= Math.max(...nodes.map(n => n.layerIndex))) {
@@ -202,26 +208,45 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
             return;
         }
 
+        // Create a path (line) between the nodes
+        const path = svg.append("line")
+            .attr("x1", node.x)
+            .attr("y1", node.y)
+            .attr("x2", targetNode.x)
+            .attr("y2", targetNode.y)
+            .attr("stroke", "rgba(255, 255, 255, 0.3)")  // Soft, subtle line
+            .attr("stroke-width", 2);
+
         const light = svg.append("circle")
-            .attr("cx", node.x)
-            .attr("cy", node.y)
-            .attr("r", 7)
-            .style("fill", "white")
-            .style("opacity", 1);
+            .attr("r", 8)
+            .attr("fill", "rgba(0, 191, 255, 1.5)")  // Bright blue color for the light
+            .style("stroke", "rgba(0, 128, 255, 0.7)")  // Lighter blue stroke for glow effect
+            .style("stroke-width", 4);
 
-        light.transition()
-            .duration(duration)
-            .attr("cx", targetNode.x)
-            .attr("cy", targetNode.y)
-            .ease(d3.easeLinear)
-            .on("end", function() {
-                d3.select(this).remove();
+        // Function to manually interpolate the light along the line
+        const animateAlongLine = (startX, startY, endX, endY, light, duration) => {
+            light.transition()
+                .duration(duration)
+                .ease(d3.easeLinear)
+                .attrTween("transform", function () {
+                    return function (t) {
+                        const currentX = startX + (endX - startX) * t;
+                        const currentY = startY + (endY - startY) * t;
+                        return `translate(${currentX},${currentY})`;
+                    };
+                })
+                .on("end", function () {
+                    d3.select(this).remove();  // Remove the light once the animation is complete
 
-                // Ensure targetNode is valid before making a recursive call
-                if (direction === "forward" && targetNode && targetNode.layerIndex < nodes.length - 1) {
-                    animateLightThroughLayer(targetNode, nextLayerData, duration, svg, "forward");
-                }
-            });
+                    // Recursive call for the next layer's animation
+                    if (direction === "forward" && targetNode && targetNode.layerIndex < nodes.length - 1) {
+                        animateLightThroughLayer(targetNode, nextLayerData, duration, svg, "forward");
+                    }
+                });
+        };
+
+        // Animate the light along the line
+        animateAlongLine(node.x, node.y, targetNode.x, targetNode.y, light, duration);
     });
 }
 // // Function to clear the neural network visualization
