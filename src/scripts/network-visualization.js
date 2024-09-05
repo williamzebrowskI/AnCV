@@ -103,44 +103,6 @@ export function drawNeuralNetwork(layers, weights) {
                         svg.selectAll(".hover-box").remove(); // Remove the hover group, including box and text
                     }
                 })
-                // .on("click", function () {
-                //     const node = d3.select(this);
-
-                //     if (node.classed("selected")) {
-                //         // Deselect the node if clicked again
-                //         node.style("stroke", "white")
-                //             .style("stroke-width", "2px")
-                //             .classed("selected", false);
-
-                //         svg.selectAll(".layer-label").remove();
-                //         selectedNodeIndex = null;  // Clear the selection
-                //     } else {
-                //         // Deselect previous node
-                //         if (selectedNode) {
-                //             selectedNode.style("stroke", "white")
-                //                         .style("stroke-width", "2px")
-                //                         .classed("selected", false);
-                //         }
-
-                //         // Select the new node
-                //         node.style("stroke", "rgba(255, 99, 132, 1)")
-                //             .style("stroke-width", "4px")
-                //             .classed("selected", true);
-
-                //         selectedNode = node;
-                //         selectedNodeIndex = nodes.findIndex(n => n.node === node.node());  // Store the index
-
-                //         // Display the "Layer" label for the selected node
-                //         svg.selectAll(".layer-label").remove();
-                //         svg.append("text")
-                //             .attr("x", node.attr("cx"))
-                //             .attr("y", node.attr("cy") - 25)
-                //             .attr("fill", "white")
-                //             .attr("font-size", "14px")
-                //             .attr("class", "layer-label")
-                //             .text(`${layerLabel} Layer`);
-                //     }
-                // });
 
             nodes.push({ layerIndex, i, x, y, node: node.node() });
         }
