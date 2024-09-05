@@ -17,6 +17,8 @@ html, body {
     padding: 15px;
     border-radius: 8px;
     width: 250px;
+    max-height: 80vh; /* Set a max height for the controls */
+    overflow-y: auto; /* Enable vertical scrolling if content overflows */
 }
 
 #controls label {
@@ -29,7 +31,7 @@ html, body {
 #controls input {
     margin-bottom: 15px;
     width: 100%;
-    padding: 5px;
+    padding: 0px;
 }
 
 #controls button {
@@ -42,6 +44,7 @@ html, body {
     border-radius: 5px;
     cursor: pointer;
 }
+
 
 #visualization {
     width: calc(100% - 260px);
