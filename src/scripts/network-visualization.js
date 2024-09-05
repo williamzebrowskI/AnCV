@@ -205,7 +205,7 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
         const light = svg.append("circle")
             .attr("cx", node.x)
             .attr("cy", node.y)
-            .attr("r", 15)
+            .attr("r", 7)
             .style("fill", "white")
             .style("opacity", 1);
 
