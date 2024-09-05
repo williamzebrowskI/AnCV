@@ -127,24 +127,27 @@ export function updateConnections(draggedNode) {
     });
 }
 
-// Animation logic for forward and backward passes
 export function animateDataFlow(data) {
+    console.log("Received data in animateDataFlow:", data); // Log the data
     const svg = d3.select("svg");
 
-    data.forEach((epochData, epochIndex) => {
-        setTimeout(() => {
-            if (stopTraining) return;
+    // If data is not an array, process it as a single object
+    if (!Array.isArray(data)) {
+        data = [data];  // Convert to array
+    }
 
-            const forwardDuration = epochData.forward_data.forward_time * 30000;
-            const backwardDuration = epochData.backward_data.backward_time * 30000;
+    data.forEach((epochData) => {
+        if (stopTraining) return;
 
-            animateForwardPass(epochData.forward_data, svg, forwardDuration);
-            setTimeout(() => {
-                animateBackwardPass(epochData.backward_data, svg, backwardDuration);
-            }, forwardDuration + 500);
-            updateLossChart(epochData.epoch, epochData.loss);
+        const forwardDuration = epochData.forward_data.forward_time * 1000; // Adjust duration as needed
+        const backwardDuration = epochData.backward_data.backward_time * 1000; // Adjust duration as needed
 
-        }, epochIndex * 1000);
+        // Trigger forward pass animation
+        animateForwardPass(epochData.forward_data, svg, forwardDuration);
+        // Trigger backward pass animation
+        animateBackwardPass(epochData.backward_data, svg, backwardDuration);
+
+        updateLossChart(epochData.epoch, epochData.loss);
     });
 }
 
