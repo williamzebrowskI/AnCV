@@ -3,7 +3,6 @@ import { stopTraining } from './event-handlers.js';
 
 let nodes = []; // Keep this global to track all nodes for connections
 let links = []; // Global array to track connections/links between nodes
-let selectedNode = null; // Track the selected node
 let selectedNodeIndex = null;  // Track the index of the selected node
 
 export function drawNeuralNetwork(layers, weights) {
