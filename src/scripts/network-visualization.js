@@ -3,6 +3,7 @@ import { stopTraining } from './event-handlers.js';
 
 let nodes = []; // Keep this global to track all nodes for connections
 let links = []; // Global array to track connections/links between nodes
+let selectedNode = null; // Track the selected node
 
 export function drawNeuralNetwork(layers, weights) {
     console.log("Received weights:", weights);
@@ -38,12 +39,61 @@ export function drawNeuralNetwork(layers, weights) {
                     .on("start", dragStarted)
                     .on("drag", dragged)
                     .on("end", dragEnded)
-                );
+                )
+                .on("mouseover", function () {
+                    if (!d3.select(this).classed("selected")) {
+                        d3.select(this).style("stroke", "rgba(255, 99, 132, 1)"); // Hover color
+                    }
+                })
+                .on("mouseout", function () {
+                    if (!d3.select(this).classed("selected")) {
+                        d3.select(this).style("stroke", "white"); // Reset to original if not selected
+                    }
+                })
+                .on("click", function () {
+                    const node = d3.select(this);
+                    
+                    // If the node is already selected, deselect it
+                    if (node.classed("selected")) {
+                        node.style("stroke", "white")      // Reset stroke color
+                            .style("stroke-width", "2px")  // Reset stroke thickness
+                            .classed("selected", false);   // Deselect the node
+                        
+                        // Remove the label if it exists
+                        svg.selectAll(".layer-label").remove();
+                        
+                        // Reset selectedNode to null since no node is selected
+                        selectedNode = null;
+                    } else {
+                        // Deselect the previous node (if any)
+                        if (selectedNode) {
+                            selectedNode.style("stroke", "white")
+                                        .style("stroke-width", "2px")  // Reset stroke thickness of the previously selected node
+                                        .classed("selected", false);
+                        }
+                        
+                        // Select the current node
+                        node.style("stroke", "rgba(255, 99, 132, 1)")  // Change stroke color to highlight
+                            .style("stroke-width", "4px")              // Increase stroke thickness for better visibility
+                            .classed("selected", true);
+                        
+                        selectedNode = node;
+                        
+                        // Display a "Layer" label near the selected node
+                        svg.selectAll(".layer-label").remove(); // Remove any previous label
+                        svg.append("text")
+                            .attr("x", node.attr("cx"))
+                            .attr("y", node.attr("cy") - 25)
+                            .attr("fill", "white")
+                            .attr("font-size", "14px")
+                            .attr("class", "layer-label")
+                            .text("Layer");
+                    }
+                });
     
             nodes.push({ layerIndex, i, x, y, node });
         }
     });
-
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex < layers.length - 1) {
             const nextLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex + 1);
