@@ -2,13 +2,29 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from nn import SimpleNeuralNetwork, generate_dummy_data
+from threading import Thread
+import ctypes
 import torch
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500"}})
 socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5500"])
 
+training_thread = None
 
+# Function to raise an exception in a thread
+def raise_exception_in_thread(thread, exc_type):
+    """Helper function to raise an exception in a running thread."""
+    if not thread.is_alive():
+        return
+    thread_id = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+        ctypes.c_long(thread.ident), ctypes.py_object(exc_type)
+    )
+    if thread_id == 0:
+        raise ValueError("Nonexistent thread id")
+    elif thread_id > 1:
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(thread.ident, None)
+        raise SystemError("Exception raise failure")
 
 def reset_network_state():
     global nn
@@ -22,9 +38,9 @@ def reset_network_state():
 def reset_network():
     return jsonify(reset_network_state())
 
-@app.route('/train', methods=['POST'])
-def train():
-    data = request.json
+@socketio.on('start_training')
+def handle_start_training(data):
+    global training_thread
     input_size = data['inputNodes']
     hidden_size = data['hiddenLayers'][0]
     output_size = data['outputNodes']
@@ -32,13 +48,12 @@ def train():
     learning_rate = data['learningRate']
     num_data_points = data['numDataPoints']
     noise_level = data['noiseLevel']
-    batch_size = data.get('batchSize', 1) 
+    batch_size = data.get('batchSize', 1)
 
     training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size)
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
 
     def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss):
-
         socketio.emit('training_update', {
             'epoch': epoch,
             'forward_data': forward_data,
@@ -47,9 +62,19 @@ def train():
             'loss': loss
         })
 
-    nn.train_network(training_data, epochs, learning_rate, callback=training_callback)
+    def train_model():
+        try:
+            nn.train_network(training_data, epochs, learning_rate, callback=training_callback)
+        except SystemExit:
+            print("Training stopped.")
+        except Exception as e:
+            print(f"Training interrupted: {e}")
 
-    return jsonify({"message": "Training started. Check WebSocket for updates."})
+    # Start the training in a new thread
+    training_thread = Thread(target=train_model)
+    training_thread.start()
+
+    emit('training_started', {"message": "Training started. Check WebSocket for updates."})
 
 @socketio.on('connect')
 def handle_connect():
@@ -60,9 +85,13 @@ def handle_disconnect():
     print('Client disconnected')
 
 @socketio.on('stop_training')
-def handle_stop_training():
-    reset_network_state()
-    print('Training stop requested by the client')
+def stop_training():
+    global training_thread
+    if training_thread and training_thread.is_alive():
+        raise_exception_in_thread(training_thread, SystemExit)  # Stop the training thread
+        training_thread.join()  # Wait for the thread to finish
+        training_thread = None
+        socketio.emit('training_stopped', {"message": "Training stopped"}) 
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
