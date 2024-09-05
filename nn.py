@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import time
-import numpy as np  # Added for random data generation
+import numpy as np
 
 class SimpleNeuralNetwork(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(SimpleNeuralNetwork, self).__init__()
-        self.hidden = nn.Linear(input_size, hidden_size)
-        self.output = nn.Linear(hidden_size, output_size)
+        self.hidden = nn.Linear(input_size, hidden_size)  # This is input-to-hidden weights
+        self.output = nn.Linear(hidden_size, output_size)  # This is hidden-to-output weights
 
     def forward(self, x):
         hidden_activation = torch.relu(self.hidden(x))
@@ -20,15 +20,28 @@ class SimpleNeuralNetwork(nn.Module):
         optimizer = optim.SGD(self.parameters(), lr=learning_rate)
 
         for epoch in range(epochs):
+            epoch_loss = 0  # Initialize epoch loss
+            batch_count = 0  # Initialize batch counter
+            
             for inputs, targets in data:
+                time.sleep(0.05)  # Simulate delay
+                
                 start_time = time.time()
+                optimizer.zero_grad()  # Reset gradients
 
-                optimizer.zero_grad()
+                # Forward pass
                 outputs, hidden_activation = self.forward(inputs)
                 forward_time = time.time() - start_time
 
+                # Compute the loss
                 loss = criterion(outputs, targets)
-                loss.backward()
+                loss.backward()  # Backpropagation
+
+                # Add the batch loss to the total epoch loss
+                epoch_loss += loss.item()
+                batch_count += 1
+
+                # Backward pass timing
                 backward_time = time.time() - start_time - forward_time
 
                 # Capture forward pass activations, backward pass gradients, and weights/biases
@@ -44,18 +57,23 @@ class SimpleNeuralNetwork(nn.Module):
                     "backward_time": backward_time
                 }
                 weights_biases_data = {
-                    "hidden_weights": self.hidden.weight.detach().tolist(),
+                    "input_weights": self.hidden.weight.detach().tolist(),  # Capture input-to-hidden weights
+                    "hidden_weights": self.output.weight.detach().tolist(),  # Hidden-to-output weights
                     "hidden_biases": self.hidden.bias.detach().tolist(),
                     "output_weights": self.output.weight.detach().tolist(),
                     "output_biases": self.output.bias.detach().tolist()
                 }
 
-                # Send data to the callback for visualization
-                callback(epoch, forward_data, backward_data, weights_biases_data, loss.item())
+                optimizer.step()  # Update the weights
 
-                optimizer.step()
+            # Compute the average loss for the epoch
+            avg_epoch_loss = epoch_loss / batch_count
+            print(f"Epoch: {epoch + 1}/{epochs}, Average Loss: {avg_epoch_loss}")
 
-def generate_dummy_data(num_data_points, input_size, output_size, noise_level):
+            # Emit the callback only after the entire epoch (not after every batch)
+            callback(epoch, forward_data, backward_data, weights_biases_data, avg_epoch_loss)
+
+def generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size=1):
     # Generate input data as a 2D array with shape (num_data_points, input_size)
     X = np.random.rand(num_data_points, input_size)
 
@@ -63,4 +81,10 @@ def generate_dummy_data(num_data_points, input_size, output_size, noise_level):
     y = np.sum(X, axis=1, keepdims=True) + noise_level * np.random.randn(num_data_points, output_size)
     
     # Convert to torch tensors
-    return [(torch.tensor(x, dtype=torch.float32), torch.tensor(y_, dtype=torch.float32)) for x, y_ in zip(X, y)]
+    X_tensor = torch.tensor(X, dtype=torch.float32)
+    y_tensor = torch.tensor(y, dtype=torch.float32)
+    # Group data into batches
+    data = [(X_tensor[i:i + batch_size], y_tensor[i:i + batch_size])
+            for i in range(0, num_data_points, batch_size)]
+    
+    return data
