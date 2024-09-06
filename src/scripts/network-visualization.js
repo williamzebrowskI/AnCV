@@ -225,19 +225,24 @@ export function animateDataFlow(data) {
     // If data is not an array, process it as a single object
     if (!Array.isArray(data)) {
         data = [data];  // Convert to array
+        console.log("Data is not an array, converting:", data);
     }
 
-    data.forEach((epochData) => {
+    data.forEach((epochData, index) => {
+        console.log(`Processing epoch ${index + 1}:`, epochData);
+
         if (stopTraining) return;
 
         const forwardDuration = epochData.forward_data.forward_time * 1000; // Adjust duration as needed
         const backwardDuration = epochData.backward_data.backward_time * 1000; // Adjust duration as needed
 
-        // Trigger forward pass animation
+        console.log(`Triggering forward pass for epoch ${index + 1}, duration: ${forwardDuration}`);
         animateForwardPass(epochData.forward_data, svg, forwardDuration);
-        // Trigger backward pass animation
+
+        console.log(`Triggering backward pass for epoch ${index + 1}, duration: ${backwardDuration}`);
         animateBackwardPass(epochData.backward_data, svg, backwardDuration);
 
+        console.log(`Updating loss chart for epoch ${index + 1}, loss: ${epochData.loss}`);
         updateLossChart(epochData.epoch, epochData.loss);
     });
 
@@ -260,18 +265,33 @@ export function animateDataFlow(data) {
     }
 }
 
-// Animation for forward pass
 export function animateForwardPass(forwardData, svg, duration) {
-    forwardData.input.forEach((input, index) => {
-        const inputNode = nodes.find(node => node.layerIndex === 0 && node.i === index);
-        
-        if (!inputNode) {
-            console.warn(`Input node not found for index ${index}`);
-            return;
-        }
-        
-        animateLightThroughLayer(inputNode, forwardData.hidden_activation, duration * 50, svg, "forward");
+    const inputNodes = parseInt(document.getElementById('inputNodes').value);  // Dynamically get the number of input nodes
+    console.log("Animating forward pass with input nodes:", inputNodes);
+
+    // Loop through each batch (array) in the input
+    forwardData.input.forEach((inputBatch, batchIndex) => {
+        console.log(`Animating batch ${batchIndex + 1} with ${inputBatch.length} inputs`);
+
+        inputBatch.forEach((input, index) => {
+            if (index >= inputNodes) {
+                console.warn(`Skipping input node ${index}, expected ${inputNodes}`);
+                return;
+            }
+
+            const inputNode = nodes.find(node => node.layerIndex === 0 && node.i === index);
+
+            if (!inputNode) {
+                console.warn(`Input node not found for index ${index}`);
+                return;
+            }
+
+            console.log(`Animating light from input node ${index} in batch ${batchIndex}, value: ${input}`);
+            animateLightThroughLayer(inputNode, forwardData.hidden_activation, duration * 50, svg, "forward");
+        });
     });
+
+    console.log(`Received input batches: ${forwardData.input.length}, expected: ${inputNodes}`);
 }
 
 // Animation for backward pass
