@@ -18,11 +18,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let pathLine;
     let currentDot;
     const surfaceSize = 20;
-    const resolution = 50; // Increased resolution for smoother surface
+    const resolution = 100; // Increased resolution for smoother surface
     const maxDepth = 5; // Maximum depth of the surface
 
     // Adjust camera and controls
-    camera.position.set(0, 15, 25);
+    camera.position.set(15, 15, 15);
     camera.lookAt(0, 0, 0);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -33,19 +33,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Define the cost function C(x1, x2) = x1^2 + x2^2
     function cost(x1, x2) {
-        return x1 ** 2 + x2 ** 2;
+        return x1 * x1 + x2 * x2;
     }
 
-    // Create a curved surface
+    // Create a bowl-shaped surface
     function createSurface() {
-        console.log("Creating surface...");
+        console.log("Creating bowl-shaped surface...");
         const geometry = new THREE.PlaneGeometry(surfaceSize, surfaceSize, resolution, resolution);
         const positions = geometry.attributes.position.array;
 
         for (let i = 0; i < positions.length; i += 3) {
-            const x = positions[i] / 10;
-            const z = positions[i + 2] / 10;
-            positions[i + 1] = cost(x, z) * maxDepth / 20;
+            const x = positions[i];
+            const z = positions[i + 2];
+            positions[i + 1] = cost(x / 5, z / 5); // Adjust scaling for better visualization
         }
 
         geometry.computeVertexNormals();
@@ -53,12 +53,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const material = new THREE.MeshPhongMaterial({ 
             color: 0x88ccee, 
             side: THREE.DoubleSide,
-            wireframe: false
+            wireframe: false,
+            shininess: 30
         });
         surfaceMesh = new THREE.Mesh(geometry, material);
         surfaceMesh.rotation.x = -Math.PI / 2;  // Rotate to lay flat
         scene.add(surfaceMesh);
-        console.log("Surface created and added to scene.");
+        console.log("Bowl-shaped surface created and added to scene.");
     }
 
     // Add debug helpers
@@ -72,20 +73,20 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log("Debug helpers added to scene.");
     }
 
-    // Update surface to create a dip
+    // Update surface to show optimization progress
     function updateSurface(position) {
         const positions = surfaceMesh.geometry.attributes.position.array;
         for (let i = 0; i < positions.length; i += 3) {
-            const x = positions[i] / 10;
-            const z = positions[i + 2] / 10;
-            let y = cost(x, z) * maxDepth / 20;
+            const x = positions[i];
+            const z = positions[i + 2];
+            let y = cost(x / 5, z / 5);
 
-            // Create a dip around the current position
-            const dx = x - position.x;
-            const dz = z - position.z;
+            // Create a slight depression around the current position
+            const dx = x - position.x * 5;
+            const dz = z - position.z * 5;
             const distance = Math.sqrt(dx * dx + dz * dz);
-            const dip = Math.exp(-distance * 2) * maxDepth / 4;
-            y -= dip;
+            const depression = Math.exp(-distance / 2) * 0.2;
+            y -= depression;
 
             positions[i + 1] = y;
         }
@@ -98,11 +99,9 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log("Updating visualization with:", outputGradients);
 
         const [x, y] = outputGradients[outputGradients.length - 1];
-        const height = cost(x, y) * maxDepth / 20;
+        const height = cost(x, y);
 
-        // Exaggerate the movement for visibility
-        const scaleFactor = 5;
-        const newPoint = new THREE.Vector3(x * scaleFactor, height, y * scaleFactor);
+        const newPoint = new THREE.Vector3(x * 5, height, y * 5);
         gradientPath.push(newPoint);
 
         // Update surface
@@ -117,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Update or create the current position dot
         if (currentDot) scene.remove(currentDot);
-        const dotGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+        const dotGeometry = new THREE.SphereGeometry(0.1, 32, 32);
         const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
         currentDot = new THREE.Mesh(dotGeometry, dotMaterial);
         currentDot.position.copy(newPoint);
@@ -129,8 +128,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    directionalLight.position.set(10, 10, 10).normalize();
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 10, 5).normalize();
     scene.add(directionalLight);
 
     // Create the surface and add debug helpers
