@@ -51,9 +51,11 @@ def handle_start_training(data):
     batch_size = data.get('batchSize', 1)
 
     training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size)
+    print(f"Hidden Size: {hidden_size}")
+    print(f"Output Size: {output_size}")
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
 
-    def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations):
+    def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations, input_size):
 
         # Convert NumPy arrays in forward_data, backward_data, and weights_biases_data to lists
         def convert_to_list(data):
@@ -71,6 +73,7 @@ def handle_start_training(data):
         all_activations = convert_to_list(all_activations)
 
         socketio.emit('training_update', {
+            'input_size': input_size,
             'epoch': epoch,
             'forward_data': forward_data,
             'backward_data': backward_data,
@@ -87,13 +90,17 @@ def handle_start_training(data):
 
     def train_model():
         try:
-            nn.train_network(training_data, epochs, learning_rate, callback=training_callback)
+            # Wrap the original callback to include input_size
+            def wrapped_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations):
+                training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations, input_size)
+
+            nn.train_network(training_data, epochs, learning_rate, callback=wrapped_callback)
         except SystemExit:
             print("Training stopped.")
         except Exception as e:
             print(f"Training interrupted: {e}")
 
-    # Start the training in a new thread
+        # Start the training in a new thread
     training_thread = Thread(target=train_model)
     training_thread.start()
 
