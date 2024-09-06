@@ -14,12 +14,15 @@ document.addEventListener('DOMContentLoaded', function () {
     container.appendChild(renderer.domElement);
 
     let surfaceMesh;
-    let gradientPath;
-    let currentSurfaceState = 0; // 0 to 1, represents progress of surface formation
+    let gradientPath = [];
+    let pathLine;
+    let currentDot;
+    const surfaceSize = 20;
+    const resolution = 50; // Increased resolution for smoother surface
     const maxDepth = 5; // Maximum depth of the surface
 
     // Adjust camera and controls
-    camera.position.set(0, 20, 20);
+    camera.position.set(0, 15, 25);
     camera.lookAt(0, 0, 0);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -33,64 +36,106 @@ document.addEventListener('DOMContentLoaded', function () {
         return x1 ** 2 + x2 ** 2;
     }
 
-    // Create the initial flat surface
-    function createFlatSurface() {
-        const geometry = new THREE.PlaneGeometry(20, 20, 50, 50);
+    // Create a curved surface
+    function createSurface() {
+        console.log("Creating surface...");
+        const geometry = new THREE.PlaneGeometry(surfaceSize, surfaceSize, resolution, resolution);
+        const positions = geometry.attributes.position.array;
+
+        for (let i = 0; i < positions.length; i += 3) {
+            const x = positions[i] / 10;
+            const z = positions[i + 2] / 10;
+            positions[i + 1] = cost(x, z) * maxDepth / 20;
+        }
+
+        geometry.computeVertexNormals();
+
         const material = new THREE.MeshPhongMaterial({ 
             color: 0x88ccee, 
-            wireframe: false,
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            wireframe: false
         });
         surfaceMesh = new THREE.Mesh(geometry, material);
         surfaceMesh.rotation.x = -Math.PI / 2;  // Rotate to lay flat
         scene.add(surfaceMesh);
-        return surfaceMesh;
+        console.log("Surface created and added to scene.");
     }
 
-    function updateSurface() {
+    // Add debug helpers
+    function addDebugHelpers() {
+        const axesHelper = new THREE.AxesHelper(10);
+        scene.add(axesHelper);
+
+        const gridHelper = new THREE.GridHelper(20, 20);
+        scene.add(gridHelper);
+
+        console.log("Debug helpers added to scene.");
+    }
+
+    // Update surface to create a dip
+    function updateSurface(position) {
         const positions = surfaceMesh.geometry.attributes.position.array;
-
         for (let i = 0; i < positions.length; i += 3) {
-            const x = positions[i] / 10;  // Scale down to match cost function
-            const y = positions[i + 1] / 10;
-            positions[i + 2] = cost(x, y) * maxDepth * currentSurfaceState;  // Gradually increase depth
-        }
+            const x = positions[i] / 10;
+            const z = positions[i + 2] / 10;
+            let y = cost(x, z) * maxDepth / 20;
 
+            // Create a dip around the current position
+            const dx = x - position.x;
+            const dz = z - position.z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+            const dip = Math.exp(-distance * 2) * maxDepth / 4;
+            y -= dip;
+
+            positions[i + 1] = y;
+        }
         surfaceMesh.geometry.attributes.position.needsUpdate = true;
         surfaceMesh.geometry.computeVertexNormals();
     }
 
-    function updateGradientPath(outputGradients) {
-        if (gradientPath) {
-            scene.remove(gradientPath);
-        }
+    // Update visualization based on gradient
+    function updateVisualization(outputGradients) {
+        console.log("Updating visualization with:", outputGradients);
 
-        const pathGeometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(outputGradients.length * 3);
+        const [x, y] = outputGradients[outputGradients.length - 1];
+        const height = cost(x, y) * maxDepth / 20;
 
-        for (let i = 0; i < outputGradients.length; i++) {
-            const [x, y] = outputGradients[i];
-            positions[i * 3] = x * 10;     // Scale to match surface size
-            positions[i * 3 + 1] = y * 10; // Scale to match surface size
-            positions[i * 3 + 2] = cost(x, y) * maxDepth * currentSurfaceState + 0.05; // Slightly above the surface
-        }
+        // Exaggerate the movement for visibility
+        const scaleFactor = 5;
+        const newPoint = new THREE.Vector3(x * scaleFactor, height, y * scaleFactor);
+        gradientPath.push(newPoint);
 
-        pathGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        // Update surface
+        updateSurface(newPoint);
 
-        const pathMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
-        gradientPath = new THREE.Line(pathGeometry, pathMaterial);
-        scene.add(gradientPath);
+        // Update or create the path line
+        if (pathLine) scene.remove(pathLine);
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints(gradientPath);
+        pathLine = new THREE.Line(lineGeometry, lineMaterial);
+        scene.add(pathLine);
+
+        // Update or create the current position dot
+        if (currentDot) scene.remove(currentDot);
+        const dotGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+        const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        currentDot = new THREE.Mesh(dotGeometry, dotMaterial);
+        currentDot.position.copy(newPoint);
+        scene.add(currentDot);
+
+        console.log("Visualization updated. Path length:", gradientPath.length);
     }
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
     directionalLight.position.set(10, 10, 10).normalize();
     scene.add(directionalLight);
 
-    // Create the initial flat surface
-    createFlatSurface();
+    // Create the surface and add debug helpers
+    createSurface();
+    addDebugHelpers();
 
     // Render loop
     function animate() {
@@ -100,6 +145,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     animate();
 
+    console.log("Animation loop started.");
+
     // Handle window resize
     window.addEventListener('resize', () => {
         camera.aspect = container.offsetWidth / container.offsetHeight;
@@ -107,35 +154,27 @@ document.addEventListener('DOMContentLoaded', function () {
         renderer.setSize(container.offsetWidth, container.offsetHeight);
     });
 
-    // Gradual surface formation
-    function formSurface() {
-        if (currentSurfaceState < 1) {
-            currentSurfaceState += 0.05; // Adjust this value to change formation speed
-            if (currentSurfaceState > 1) currentSurfaceState = 1;
-            updateSurface();
-        }
-    }
-
     // Expose update function to global scope
-    window.updateVisualization = function(outputGradients) {
-        formSurface();
-        updateGradientPath(outputGradients);
-    };
+    window.updateVisualization = updateVisualization;
 
     // Assume socket is defined elsewhere
-    socket.on('gradient_update', function(data) {
-        console.log("Received gradient update:", data);
-        try {
-            const outputGradients = data.backward_data.output_grad;
-
-            if (!outputGradients) {
-                throw new Error("Invalid gradient data structure");
+    if (typeof socket !== 'undefined') {
+        socket.on('gradient_update', function(data) {
+            console.log("Received gradient update from socket:", data);
+            try {
+                const outputGradients = data.backward_data.output_grad;
+                if (!outputGradients) {
+                    throw new Error("Invalid gradient data structure");
+                }
+                window.updateVisualization(outputGradients);
+            } catch (error) {
+                console.error("Error processing gradient update:", error);
             }
+        });
+    } else {
+        console.warn("Socket is not defined. Gradient updates will not be received.");
+    }
 
-            window.updateVisualization(outputGradients);
-        } catch (error) {
-            console.error("Error processing gradient update:", error);
-            console.error("Received data:", data);
-        }
-    });
+    // Log scene contents
+    console.log("Scene children:", scene.children);
 });
