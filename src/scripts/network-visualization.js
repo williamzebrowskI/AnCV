@@ -24,13 +24,23 @@ export function drawNeuralNetwork(layers, weights) {
     nodes = []; // Clear the global nodes array before redrawing
     links = []; // Clear the global links array before redrawing
 
+    // Create nodes
     layers.forEach((layerSize, layerIndex) => {
         const x = layerSpacing * (layerIndex + 1);
         const ySpacing = height / (layerSize + 1);
-    
+
         for (let i = 0; i < layerSize; i++) {
             const y = ySpacing * (i + 1);
-    
+
+            let layerLabel;
+            if (layerIndex === 0) {
+                layerLabel = "Input";
+            } else if (layerIndex === layers.length - 1) {
+                layerLabel = "Output";
+            } else {
+                layerLabel = "Hidden";
+            }
+
             const node = svg.append("circle")
                 .attr("cx", x)
                 .attr("cy", y)
@@ -44,67 +54,68 @@ export function drawNeuralNetwork(layers, weights) {
                     .on("end", dragEnded)
                 )
                 .on("mouseover", function () {
-                    if (!d3.select(this).classed("selected")) {
-                        d3.select(this).style("stroke", "rgba(255, 99, 132, 1)"); // Hover color
-                        d3.select(this).style("stroke-width", "4px"); // Increase stroke width on hover
-                    }
+                    d3.select(this).style("stroke", "rgba(255, 99, 132, 1)").style("stroke-width", "4px");
+                
+                    // Display a white box with details on hover
+                    const boxWidth = 120;
+                    const boxHeight = 50;
+                    const boxX = parseFloat(d3.select(this).attr("cx")) - boxWidth / 2;
+                    const boxY = parseFloat(d3.select(this).attr("cy")) - nodeRadius - boxHeight - 10;
+                
+                    // Append the group container for the box and text
+                    const hoverGroup = svg.append("g")
+                        .attr("class", "hover-box");
+                
+                    hoverGroup.append("rect")
+                        .attr("x", boxX)
+                        .attr("y", boxY)
+                        .attr("width", boxWidth)
+                        .attr("height", boxHeight)
+                        .attr("fill", "white")
+                        .attr("stroke", "rgba(255, 99, 132, 1)")
+                        .attr("rx", 10)
+                        .attr("ry", 10);
+                
+                    // Create the text label inside the box
+                    hoverGroup.append("text")
+                        .attr("x", boxX + boxWidth / 2)
+                        .attr("y", boxY + 20)
+                        .attr("fill", "black")
+                        .attr("font-size", "14px")
+                        .attr("text-anchor", "middle")
+                        .attr("class", "hover-text")
+                        .text(`${layerLabel} Layer`);
+                
+                    // Add another placeholder text for future details
+                    hoverGroup.append("text")
+                        .attr("x", boxX + boxWidth / 2)
+                        .attr("y", boxY + 40)
+                        .attr("fill", "gray")
+                        .attr("font-size", "12px")
+                        .attr("text-anchor", "middle")
+                        .attr("class", "hover-text")
+                        .text("Details...");
                 })
                 .on("mouseout", function () {
                     if (!d3.select(this).classed("selected")) {
                         d3.select(this).style("stroke", "white"); // Reset stroke color
                         d3.select(this).style("stroke-width", "2px"); // Reset to original stroke width
+                        svg.selectAll(".hover-box").remove(); // Remove the hover group, including box and text
                     }
                 })
-                .on("click", function () {
-                    const node = d3.select(this);
-                    
-                    if (node.classed("selected")) {
-                        // Deselect the node if clicked again
-                        node.style("stroke", "white")
-                            .style("stroke-width", "2px")
-                            .classed("selected", false);
-                        
-                        svg.selectAll(".layer-label").remove();
-                        selectedNodeIndex = null;  // Clear the selection
-                    } else {
-                        // Deselect previous node
-                        if (selectedNode) {
-                            selectedNode.style("stroke", "white")
-                                        .style("stroke-width", "2px")
-                                        .classed("selected", false);
-                        }
-                        
-                        // Select the new node
-                        node.style("stroke", "rgba(255, 99, 132, 1)")
-                            .style("stroke-width", "4px")
-                            .classed("selected", true);
-                        
-                        selectedNode = node;
-                        selectedNodeIndex = nodes.findIndex(n => n.node.node() === this);  // Store the index
-                        
-                        // Display the "Layer" label for the selected node
-                        svg.selectAll(".layer-label").remove();
-                        svg.append("text")
-                            .attr("x", node.attr("cx"))
-                            .attr("y", node.attr("cy") - 25)
-                            .attr("fill", "white")
-                            .attr("font-size", "14px")
-                            .attr("class", "layer-label")
-                            .text("Layer");
-                    }
-                });
-    
-            nodes.push({ layerIndex, i, x, y, node });
+
+            nodes.push({ layerIndex, i, x, y, node: node.node() });
         }
     });
 
+    // Create links (lines between nodes)
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex < layers.length - 1) {
             const nextLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex + 1);
-    
+
             nextLayerNodes.forEach((targetNode, j) => {
                 let weight;
-                
+
                 // Handle input-to-hidden weights
                 if (sourceNode.layerIndex === 0) {
                     weight = weights && weights[`input_weights`] && weights[`input_weights`][j]
@@ -116,7 +127,7 @@ export function drawNeuralNetwork(layers, weights) {
                         ? weights[`hidden_weights`][j][sourceNode.i]
                         : 0.5; // Default weight if undefined
                 }
-    
+
                 const line = svg.append("line")
                     .attr("x1", sourceNode.x)
                     .attr("y1", sourceNode.y)
@@ -128,7 +139,7 @@ export function drawNeuralNetwork(layers, weights) {
                     .on("mouseover", function () {
                         // Highlight the line
                         d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4);
-    
+
                         // Display the weight in a tooltip
                         const tooltip = svg.append("text")
                             .attr("x", (sourceNode.x + targetNode.x) / 2)
@@ -137,14 +148,14 @@ export function drawNeuralNetwork(layers, weights) {
                             .attr("font-size", "14px")
                             .attr("text-anchor", "middle")
                             .text(`Weight: ${(weight || 0).toFixed(4)}`); // Show the weight
-    
+
                         // Handle mouseout event to reset the line and remove the tooltip
                         d3.select(this).on("mouseout", function () {
-                            d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2); 
+                            d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2);
                             tooltip.remove(); // Remove the tooltip on mouseout
                         });
                     });
-    
+
                 links.push({ source: sourceNode, target: targetNode, line, weight });
             });
         }
@@ -156,7 +167,12 @@ export function dragStarted(event, d) {
 }
 
 export function dragged(event, d) {
-    const draggedNode = nodes.find(n => n.node.node() === this);
+    const draggedNode = nodes.find(n => n.node === this);
+
+    if (!draggedNode) {
+        console.error("Dragged node not found.");
+        return;
+    }
 
     // Move the node
     d3.select(this)
@@ -169,6 +185,21 @@ export function dragged(event, d) {
 
     // Update the connections as the node is dragged
     updateConnections(draggedNode);
+
+    // Ensure the svg reference is captured in the scope of this function
+    const svg = d3.select("#visualization svg");
+    const nodeRadius = 20;  // Define nodeRadius if not globally available
+    const boxWidth = 120;  // Define box width
+    const boxHeight = 50;   // Define box height
+
+    // Move the hover box and text together
+    svg.selectAll(".hover-box rect")
+        .attr("x", event.x - boxWidth / 2)
+        .attr("y", event.y - nodeRadius - boxHeight - 10);
+
+    svg.selectAll(".hover-text")
+        .attr("x", event.x)
+        .attr("y", (d, i) => event.y - nodeRadius - boxHeight - 10 + (i + 1) * 20);
 }
 
 export function dragEnded(event, d) {
@@ -194,19 +225,24 @@ export function animateDataFlow(data) {
     // If data is not an array, process it as a single object
     if (!Array.isArray(data)) {
         data = [data];  // Convert to array
+        console.log("Data is not an array, converting:", data);
     }
 
-    data.forEach((epochData) => {
+    data.forEach((epochData, index) => {
+        console.log(`Processing epoch ${index + 1}:`, epochData);
+
         if (stopTraining) return;
 
         const forwardDuration = epochData.forward_data.forward_time * 1000; // Adjust duration as needed
         const backwardDuration = epochData.backward_data.backward_time * 1000; // Adjust duration as needed
 
-        // Trigger forward pass animation
+        console.log(`Triggering forward pass for epoch ${index + 1}, duration: ${forwardDuration}`);
         animateForwardPass(epochData.forward_data, svg, forwardDuration);
-        // Trigger backward pass animation
+
+        console.log(`Triggering backward pass for epoch ${index + 1}, duration: ${backwardDuration}`);
         animateBackwardPass(epochData.backward_data, svg, backwardDuration);
 
+        console.log(`Updating loss chart for epoch ${index + 1}, loss: ${epochData.loss}`);
         updateLossChart(epochData.epoch, epochData.loss);
     });
 
@@ -229,18 +265,33 @@ export function animateDataFlow(data) {
     }
 }
 
-// Animation for forward pass
 export function animateForwardPass(forwardData, svg, duration) {
-    forwardData.input.forEach((input, index) => {
-        const inputNode = nodes.find(node => node.layerIndex === 0 && node.i === index);
-        
-        if (!inputNode) {
-            console.warn(`Input node not found for index ${index}`);
-            return;
-        }
-        
-        animateLightThroughLayer(inputNode, forwardData.hidden_activation, duration * 50, svg, "forward");
+    const inputNodes = parseInt(document.getElementById('inputNodes').value);  // Dynamically get the number of input nodes
+    console.log("Animating forward pass with input nodes:", inputNodes);
+
+    // Loop through each batch (array) in the input
+    forwardData.input.forEach((inputBatch, batchIndex) => {
+        console.log(`Animating batch ${batchIndex + 1} with ${inputBatch.length} inputs`);
+
+        inputBatch.forEach((input, index) => {
+            if (index >= inputNodes) {
+                console.warn(`Skipping input node ${index}, expected ${inputNodes}`);
+                return;
+            }
+
+            const inputNode = nodes.find(node => node.layerIndex === 0 && node.i === index);
+
+            if (!inputNode) {
+                console.warn(`Input node not found for index ${index}`);
+                return;
+            }
+
+            console.log(`Animating light from input node ${index} in batch ${batchIndex}, value: ${input}`);
+            animateLightThroughLayer(inputNode, forwardData.hidden_activation, duration * 50, svg, "forward");
+        });
     });
+
+    console.log(`Received input batches: ${forwardData.input.length}, expected: ${inputNodes}`);
 }
 
 // Animation for backward pass

@@ -17,6 +17,8 @@ html, body {
     padding: 15px;
     border-radius: 8px;
     width: 250px;
+    max-height: 100vh; /* Set a max height for the controls */
+    overflow-y: auto; /* Enable vertical scrolling if content overflows */
 }
 
 #controls label {
@@ -29,7 +31,7 @@ html, body {
 #controls input {
     margin-bottom: 15px;
     width: 100%;
-    padding: 5px;
+    padding: 0px;
 }
 
 #controls button {
@@ -42,6 +44,7 @@ html, body {
     border-radius: 5px;
     cursor: pointer;
 }
+
 
 #visualization {
     width: calc(100% - 260px);
@@ -107,4 +110,34 @@ html, body {
     background-color: #ccc;  /* Shaded-out look */
     cursor: not-allowed;     /* Not-allowed cursor */
     opacity: 0.6;            /* Semi-transparent */
+}
+
+#gradientMapContainer {
+    position: fixed;
+    bottom: 20px;  /* Make sure it's 20px from the bottom of the screen */
+    right: 20px;   /* Make sure it's 20px from the right of the screen */
+    width: 375px;  /* Adjust the width to fit within your screen */
+    height: 250px; /* Adjust the height to fit within your screen */
+    z-index: 1000; /* Make sure it's above other elements */
+    border: 2px solid white;
+    overflow: hidden;  /* Ensure no content goes outside the container */
+    border-radius: 8px;
+}
+
+#gradientMapContainer.expanded {
+    width: 625px;  /* Expanded width */
+    height: 500px; /* Expanded height */
+}
+#expandGradientBtn {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    font-size: 16px;
+    color: rgba(255, 99, 132, 1);
+    transform: rotate(45deg);
 }

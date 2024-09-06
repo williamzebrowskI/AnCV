@@ -4,7 +4,7 @@ from flask_socketio import SocketIO, emit
 from nn import SimpleNeuralNetwork, generate_dummy_data
 from threading import Thread
 import ctypes
-import torch
+import numpy as np
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500"}})
@@ -51,26 +51,56 @@ def handle_start_training(data):
     batch_size = data.get('batchSize', 1)
 
     training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size)
+    print(f"Hidden Size: {hidden_size}")
+    print(f"Output Size: {output_size}")
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
 
-    def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss):
+    def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations, input_size):
+
+        # Convert NumPy arrays in forward_data, backward_data, and weights_biases_data to lists
+        def convert_to_list(data):
+            if isinstance(data, np.ndarray):
+                return data.tolist()
+            elif isinstance(data, dict):  # Handle nested dictionaries
+                return {key: convert_to_list(value) for key, value in data.items()}
+            elif isinstance(data, list):  # Handle lists of ndarrays
+                return [convert_to_list(item) for item in data]
+            return data
+
+        forward_data = convert_to_list(forward_data)
+        backward_data = convert_to_list(backward_data)
+        weights_biases_data = convert_to_list(weights_biases_data)
+        all_activations = convert_to_list(all_activations)
+
         socketio.emit('training_update', {
+            'input_size': input_size,
             'epoch': epoch,
             'forward_data': forward_data,
             'backward_data': backward_data,
             'weights_biases_data': weights_biases_data,
-            'loss': loss
+            'loss': loss,
+            'all_activations': all_activations
+        })
+
+        socketio.emit('gradient_update', {
+            'loss': loss,
+            'epoch': epoch,
+            'backward_data': backward_data
         })
 
     def train_model():
         try:
-            nn.train_network(training_data, epochs, learning_rate, callback=training_callback)
+            # Wrap the original callback to include input_size
+            def wrapped_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations):
+                training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations, input_size)
+
+            nn.train_network(training_data, epochs, learning_rate, callback=wrapped_callback)
         except SystemExit:
             print("Training stopped.")
         except Exception as e:
             print(f"Training interrupted: {e}")
 
-    # Start the training in a new thread
+        # Start the training in a new thread
     training_thread = Thread(target=train_model)
     training_thread.start()
 
