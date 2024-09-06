@@ -4,7 +4,7 @@ from flask_socketio import SocketIO, emit
 from nn import SimpleNeuralNetwork, generate_dummy_data
 from threading import Thread
 import ctypes
-import torch
+import numpy as np
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500"}})
@@ -53,13 +53,29 @@ def handle_start_training(data):
     training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size)
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
 
-    def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss):
+    def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations):
+        # Convert NumPy arrays in forward_data, backward_data, and weights_biases_data to lists
+        def convert_to_list(data):
+            if isinstance(data, np.ndarray):
+                return data.tolist()
+            elif isinstance(data, dict):  # Handle nested dictionaries
+                return {key: convert_to_list(value) for key, value in data.items()}
+            elif isinstance(data, list):  # Handle lists of ndarrays
+                return [convert_to_list(item) for item in data]
+            return data
+
+        forward_data = convert_to_list(forward_data)
+        backward_data = convert_to_list(backward_data)
+        weights_biases_data = convert_to_list(weights_biases_data)
+        all_activations = convert_to_list(all_activations)
+
         socketio.emit('training_update', {
             'epoch': epoch,
             'forward_data': forward_data,
             'backward_data': backward_data,
             'weights_biases_data': weights_biases_data,
-            'loss': loss
+            'loss': loss,
+            'all_activations': all_activations
         })
 
     def train_model():
