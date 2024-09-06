@@ -54,6 +54,7 @@ def handle_start_training(data):
     nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
 
     def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations):
+
         # Convert NumPy arrays in forward_data, backward_data, and weights_biases_data to lists
         def convert_to_list(data):
             if isinstance(data, np.ndarray):
@@ -76,6 +77,12 @@ def handle_start_training(data):
             'weights_biases_data': weights_biases_data,
             'loss': loss,
             'all_activations': all_activations
+        })
+
+        socketio.emit('gradient_update', {
+            'loss': loss,
+            'epoch': epoch,
+            'backward_data': backward_data
         })
 
     def train_model():
