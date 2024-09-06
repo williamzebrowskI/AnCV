@@ -21,24 +21,6 @@ socket.on('training_update', function(data) {
 
     console.log('Training update received:', data);
 
-    // Log gradients to ensure they are present
-    console.log('Hidden Gradients:', data.backward_data.hidden_grad);
-    console.log('Output Gradients:', data.backward_data.output_grad);
-
-    // Verify if gradient data exists
-    if (data.backward_data.hidden_grad && data.backward_data.output_grad) {
-        const hiddenGradients = data.backward_data.hidden_grad;
-        const outputGradients = data.backward_data.output_grad;
-
-        // Call the 3D update function to reflect the gradient map
-        if (typeof window.updateGradientMap === 'function') {
-            window.updateGradientMap(hiddenGradients, outputGradients);
-        } else {
-            console.error('updateGradientMap function not found.');
-        }
-    } else {
-        console.error('No gradient data received.');
-    }
     // Update the neural network visualization
     const layers = [
         parseInt(document.getElementById('inputNodes').value),
@@ -99,11 +81,6 @@ document.getElementById('trainNetworkBtn').addEventListener('click', function ()
         console.log(data.message);
     });
 
-    // // Listen for updates during training
-    // socket.on('training_update', function(update) {
-    //     console.log("Training update:", update);
-    //     // You can process the update here, such as drawing the neural network or updating the chart
-    // });
 
     // Re-enable the "Train" button after training is completed (or in the stop handler)
     socket.on('training_completed', function() {
