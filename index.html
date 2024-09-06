@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neural Network Visualizer</title>
     <link rel="stylesheet" href="src/styles.css"> <!-- Link to the external stylesheet -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> <!-- Plotly.js -->
 </head>
 <body>
     <!-- Left-side controls -->
@@ -52,22 +53,26 @@
         <div id="lossValue" class="loss-value"></div>
     </div>
 
-    <!-- Load the necessary libraries and scripts -->
+    <div id="gradientMapContainer"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script> <!-- D3.js -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/controls/OrbitControls.js"></script>
+
     <script>
         var socket = io.connect('http://127.0.0.1:5000');
-    
+
         socket.on('connect', function() {
             console.log("WebSocket connection established");
         });
-    
+
         socket.on('training_update', function(data) {
             console.log("Training update:", data);
             // You can update your UI with the data here (e.g., display the current epoch and loss)
         });
-    
+
         socket.on('disconnect', function() {
             console.log("WebSocket connection closed");
         });
@@ -75,14 +80,14 @@
         socket.on('stop_training', function() {
             console.log("Training Stopped");
         });
-
-
-
     </script>
+
     <!-- Import custom scripts -->
+    <script src="src/scripts/gradiant.js"></script>
     <script type="module" src="src/scripts/chart-logic.js"></script>
     <script type="module" src="src/scripts/event-handlers.js"></script>
     <script type="module" src="src/scripts/network-visualization.js"></script>
+    
 
 </body>
 </html>
