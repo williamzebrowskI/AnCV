@@ -119,7 +119,7 @@ html, body {
     width: 375px;  /* Adjust the width to fit within your screen */
     height: 250px; /* Adjust the height to fit within your screen */
     z-index: 1000; /* Make sure it's above other elements */
-    border: 1px solid rgba(255, 99, 132, 1); /* Same color as loss chart */
+    border: 2px solid white;
     overflow: hidden;  /* Ensure no content goes outside the container */
     border-radius: 8px;
 }
