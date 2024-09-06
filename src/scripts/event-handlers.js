@@ -130,6 +130,7 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     document.getElementById('noiseLevel').value = 0.1;
 
     resetLossChart();
+    refreshMap()
 
     stopTraining = true;
 
