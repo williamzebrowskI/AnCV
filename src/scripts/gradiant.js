@@ -1,5 +1,20 @@
 document.addEventListener('DOMContentLoaded', function () {
     const container = document.getElementById('gradientMapContainer');
+    const expandGradientBtn = document.getElementById('expandGradientBtn');
+    let isGradientExpanded = false;
+
+    // Expand/Collapse functionality for the gradient map
+    expandGradientBtn.addEventListener('click', function () {
+        if (isGradientExpanded) {
+            container.classList.remove('expanded');  // Collapse the map
+            expandGradientBtn.textContent = '<>';  // Change the button text to +
+        } else {
+            container.classList.add('expanded');  // Expand the map
+            expandGradientBtn.textContent = '<>';  // Change the button text to -
+        }
+        isGradientExpanded = !isGradientExpanded;  // Toggle the state
+        resizeRendererToDisplaySize();  // Adjust Three.js scene to fit new container size
+    });
 
     if (!container) {
         console.error("Container for gradient map not found.");
@@ -17,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let gradientPath = [];
     let pathLine;
     let currentDot;
-    const surfaceSize = 20;
+    const surfaceSize = 15;
     const resolution = 150; // Increased resolution for smoother surface
     const maxDepth = 5; // Maximum depth of the surface
 
@@ -30,6 +45,17 @@ document.addEventListener('DOMContentLoaded', function () {
     controls.dampingFactor = 0.25;
     controls.screenSpacePanning = false;
     controls.maxPolarAngle = Math.PI / 2;
+
+        // Function to resize the Three.js renderer and camera based on container size
+    function resizeRendererToDisplaySize() {
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+    
+            // Update camera aspect ratio and renderer size
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
 
     // Define the cost function C(x1, x2) = x1^2 + x2^2
     function cost(x1, x2) {
@@ -124,7 +150,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         console.log("Visualization updated. Path length:", gradientPath.length);
     }
-
     // Refresh map function
     function refreshMap() {
         console.log("Refreshing map...");
@@ -174,6 +199,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     animate();
 
+    window.addEventListener('resize', resizeRendererToDisplaySize);
+
     console.log("Animation loop started.");
 
     // Handle window resize
@@ -205,4 +232,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     console.log("Scene children:", scene.children);
+
 });
