@@ -16,25 +16,40 @@ socket.on('disconnect', function() {
     console.log("Disconnected from WebSocket server");
 });
 
-// Listen for real-time training updates via WebSocket
 socket.on('training_update', function(data) {
     if (stopTraining) return;  // Stop updating the UI if training has stopped
 
     console.log('Training update received:', data);
 
-    // Update the UI with training data (e.g., updating a loss chart)
-    updateLossChart(data.epoch, data.loss);  // Assuming this function exists to update the loss chart
+    // Log gradients to ensure they are present
+    console.log('Hidden Gradients:', data.backward_data.hidden_grad);
+    console.log('Output Gradients:', data.backward_data.output_grad);
 
+    // Verify if gradient data exists
+    if (data.backward_data.hidden_grad && data.backward_data.output_grad) {
+        const hiddenGradients = data.backward_data.hidden_grad;
+        const outputGradients = data.backward_data.output_grad;
+
+        // Call the 3D update function to reflect the gradient map
+        if (typeof window.updateGradientMap === 'function') {
+            window.updateGradientMap(hiddenGradients, outputGradients);
+        } else {
+            console.error('updateGradientMap function not found.');
+        }
+    } else {
+        console.error('No gradient data received.');
+    }
+    // Update the neural network visualization
     const layers = [
         parseInt(document.getElementById('inputNodes').value),
         ...document.getElementById('hiddenLayers').value.split(',').map(Number),
         parseInt(document.getElementById('outputNodes').value)
     ];
 
-    // Update the neural network visualization with the new weights/biases
+    // Draw the updated network
     networkVisualization.drawNeuralNetwork(layers, data.weights_biases_data);
 
-    // Optionally, animate the forward and backward pass using the data
+    // Optionally animate forward and backward passes
     networkVisualization.animateDataFlow(data);
 });
 
@@ -84,11 +99,11 @@ document.getElementById('trainNetworkBtn').addEventListener('click', function ()
         console.log(data.message);
     });
 
-    // Listen for updates during training
-    socket.on('training_update', function(update) {
-        console.log("Training update:", update);
-        // You can process the update here, such as drawing the neural network or updating the chart
-    });
+    // // Listen for updates during training
+    // socket.on('training_update', function(update) {
+    //     console.log("Training update:", update);
+    //     // You can process the update here, such as drawing the neural network or updating the chart
+    // });
 
     // Re-enable the "Train" button after training is completed (or in the stop handler)
     socket.on('training_completed', function() {
