@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import time
 import numpy as np
@@ -11,7 +12,7 @@ class SimpleNeuralNetwork(nn.Module):
         self.output = nn.Linear(hidden_size, output_size)  # This is hidden-to-output weights
 
     def forward(self, x):
-        hidden_activation = torch.relu(self.hidden(x))
+        hidden_activation = F.gelu(self.hidden(x))
         output = self.output(hidden_activation)
         return output, hidden_activation
 
