@@ -111,3 +111,16 @@ html, body {
     cursor: not-allowed;     /* Not-allowed cursor */
     opacity: 0.6;            /* Semi-transparent */
 }
+
+#gradientMapContainer {
+    position: fixed;
+    bottom: 20px;  /* Make sure it's 20px from the bottom of the screen */
+    right: 20px;   /* Make sure it's 20px from the right of the screen */
+    width: 375px;  /* Adjust the width to fit within your screen */
+    height: 250px; /* Adjust the height to fit within your screen */
+    z-index: 1000; /* Make sure it's above other elements */
+    background-color: rgba(0, 0, 0, 0.7); /* Optional: semi-transparent background */
+    border: 1px solid rgba(255, 99, 132, 1); /* Same color as loss chart */
+    overflow: hidden;  /* Ensure no content goes outside the container */
+    border-radius: 8px;
+}
