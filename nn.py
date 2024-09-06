@@ -18,6 +18,7 @@ class SimpleNeuralNetwork(nn.Module):
     def train_network(self, data, epochs, learning_rate, callback):
         criterion = nn.MSELoss()
         optimizer = optim.SGD(self.parameters(), lr=learning_rate)
+        all_activations = []  # Accumulate activations here
 
         for epoch in range(epochs):
             epoch_loss = 0  # Initialize epoch loss
@@ -32,6 +33,8 @@ class SimpleNeuralNetwork(nn.Module):
                 # Forward pass
                 outputs, hidden_activation = self.forward(inputs)
                 forward_time = time.time() - start_time
+
+                all_activations.append(hidden_activation.detach().cpu().numpy())
 
                 # Compute the loss
                 loss = criterion(outputs, targets)
@@ -71,7 +74,7 @@ class SimpleNeuralNetwork(nn.Module):
             print(f"Epoch: {epoch + 1}/{epochs}, Average Loss: {avg_epoch_loss}")
 
             # Emit the callback only after the entire epoch (not after every batch)
-            callback(epoch, forward_data, backward_data, weights_biases_data, avg_epoch_loss)
+            callback(epoch, forward_data, backward_data, weights_biases_data, avg_epoch_loss, all_activations)
 
 def generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size=1):
     # Generate input data as a 2D array with shape (num_data_points, input_size)
