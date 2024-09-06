@@ -123,3 +123,21 @@ html, body {
     overflow: hidden;  /* Ensure no content goes outside the container */
     border-radius: 8px;
 }
+
+#gradientMapContainer.expanded {
+    width: 625px;  /* Expanded width */
+    height: 500px; /* Expanded height */
+}
+#expandGradientBtn {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    font-size: 16px;
+    color: rgba(255, 99, 132, 1);
+    transform: rotate(45deg);
+}
