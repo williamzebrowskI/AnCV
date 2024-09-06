@@ -18,11 +18,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let pathLine;
     let currentDot;
     const surfaceSize = 20;
-    const resolution = 100; // Increased resolution for smoother surface
+    const resolution = 150; // Increased resolution for smoother surface
     const maxDepth = 5; // Maximum depth of the surface
 
     // Adjust camera and controls
-    camera.position.set(15, 15, 15);
+    camera.position.set(8, 8, 15);
     camera.lookAt(0, 0, 0);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -125,6 +125,36 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log("Visualization updated. Path length:", gradientPath.length);
     }
 
+    // Refresh map function
+    function refreshMap() {
+        console.log("Refreshing map...");
+        
+        // Remove existing path and dot
+        if (pathLine) {
+            scene.remove(pathLine);
+            pathLine = null;
+        }
+        if (currentDot) {
+            scene.remove(currentDot);
+            currentDot = null;
+        }
+        
+        // Clear gradient path
+        gradientPath = [];
+
+        // Reset surface to initial bowl shape
+        const positions = surfaceMesh.geometry.attributes.position.array;
+        for (let i = 0; i < positions.length; i += 3) {
+            const x = positions[i];
+            const z = positions[i + 2];
+            positions[i + 1] = cost(x / 5, z / 5);
+        }
+        surfaceMesh.geometry.attributes.position.needsUpdate = true;
+        surfaceMesh.geometry.computeVertexNormals();
+
+        console.log("Map refreshed.");
+    }
+
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
@@ -153,8 +183,8 @@ document.addEventListener('DOMContentLoaded', function () {
         renderer.setSize(container.offsetWidth, container.offsetHeight);
     });
 
-    // Expose update function to global scope
     window.updateVisualization = updateVisualization;
+    window.refreshMap = refreshMap;
 
     // Assume socket is defined elsewhere
     if (typeof socket !== 'undefined') {
@@ -174,6 +204,5 @@ document.addEventListener('DOMContentLoaded', function () {
         console.warn("Socket is not defined. Gradient updates will not be received.");
     }
 
-    // Log scene contents
     console.log("Scene children:", scene.children);
 });
