@@ -95,11 +95,13 @@ def handle_start_training(data):
                 training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations, input_size)
 
             nn.train_network(training_data, epochs, learning_rate, callback=wrapped_callback)
+            socketio.emit('training_completed', {"message": "Training completed successfully"})
         except SystemExit:
             print("Training stopped.")
+            socketio.emit('training_stopped', {"message": "Training stopped"})
         except Exception as e:
             print(f"Training interrupted: {e}")
-
+            socketio.emit('training_error', {"message": f"Training error: {str(e)}"})
     # Start the training in a new thread
     training_thread = Thread(target=train_model)
     training_thread.start()
