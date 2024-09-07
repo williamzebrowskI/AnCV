@@ -67,6 +67,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/controls/OrbitControls.js"></script>
 
     <script type="module">
+
 import { drawNeuralNetwork } from './src/scripts/network-visualization.js';
 
 let hiddenLayers = {1:4, 2:2}; // Dictionary to store hidden layers and their sizes
@@ -146,7 +147,7 @@ removeHiddenLayerBtn.addEventListener('click', removeHiddenLayer);
 inputNodesElement.addEventListener('input', updateNetworkVisualization);
 outputNodesElement.addEventListener('input', updateNetworkVisualization);
 
-// Initialize
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM fully loaded. Initializing network visualization.');
     initializeExistingLayers();
