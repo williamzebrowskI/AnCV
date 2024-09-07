@@ -170,30 +170,41 @@ document.getElementById('inputNodes').addEventListener('input', function() {
     networkVisualization.drawNeuralNetwork(layers); // Draw network without needing to press the button
 });
 
-// Reset all values and the network when the "Reset" button is clicked
+// In event-handlers.js
+
 document.getElementById('resetAllBtn').addEventListener('click', function () {
+    // Reset input and output nodes
     document.getElementById('inputNodes').value = 4;
-    document.getElementById('hiddenLayers').value = '3,2';
     document.getElementById('outputNodes').value = 1;
+    
+    // Reset other parameters
     document.getElementById('epochs').value = 100;
     document.getElementById('learningRate').value = 0.001;
     document.getElementById('numDataPoints').value = 100;
     document.getElementById('noiseLevel').value = 0.1;
-
+    
+    // Reset hidden layers using custom event
+    document.dispatchEvent(new Event('resetHiddenLayers'));
+    
     resetLossChart();
-    refreshMap()
-
+    refreshMap();
     stopTraining = true;
-
-    networkVisualization.clearNetwork();
-
+    
     const defaultInputNodes = 4;
-    const defaultHiddenLayers = [3, 2];
     const defaultOutputNodes = 1;
-    const layers = [defaultInputNodes, ...defaultHiddenLayers, defaultOutputNodes];
 
-    networkVisualization.drawNeuralNetwork(layers); // Redraw the network
-
+    // Get hidden layer sizes using custom event
+    document.dispatchEvent(new Event('getHiddenLayerSizes'));
+    document.addEventListener('hiddenLayerSizesResult', function handler(e) {
+        const hiddenLayerSizes = e.detail;
+        const layers = [defaultInputNodes, ...hiddenLayerSizes, defaultOutputNodes];
+        
+        // Update the network visualization without clearing it
+        networkVisualization.drawNeuralNetwork(layers);
+        
+        document.removeEventListener('hiddenLayerSizesResult', handler);
+    });
+    
     // Make a call to reset the backend neural network state
     fetch('http://127.0.0.1:5000/reset', {
         method: 'POST'
@@ -201,7 +212,6 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     .then(response => response.json())
     .then(data => {
         console.log(data.message);  // Confirmation that the network has been reset
-
         // Enable the "Train" button after reset
         const trainBtn = document.getElementById('trainNetworkBtn');
         trainBtn.disabled = false;
@@ -209,7 +219,6 @@ document.getElementById('resetAllBtn').addEventListener('click', function () {
     })
     .catch(error => console.error('Error resetting network:', error));
 });
-
 
 // Handle expanding logic for the loss display
 handleExpandLossDisplay();
