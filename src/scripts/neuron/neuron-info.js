@@ -5,7 +5,7 @@ export function createNeuronPopup(svg) {
 
     popup.append("rect")
         .attr("width", 200)
-        .attr("height", 170)
+        .attr("height", 200)  // Increased height to accommodate all fields
         .attr("fill", "rgba(52, 152, 219, 0.9)")
         .attr("rx", 10)
         .attr("ry", 10);
@@ -29,16 +29,23 @@ export function createNeuronPopup(svg) {
         .attr("y", 80)
         .attr("fill", "white");
 
+    // Append Pre-Activation
+    popup.append("text")
+        .attr("class", "popup-pre-activation")
+        .attr("x", 10)
+        .attr("y", 110)  // Adjusted position for pre-activation
+        .attr("fill", "white");
+
     popup.append("text")
         .attr("class", "popup-activation")
         .attr("x", 10)
-        .attr("y", 110)
+        .attr("y", 140)
         .attr("fill", "white");
 
     popup.append("text")
         .attr("class", "popup-gradient")
         .attr("x", 10)
-        .attr("y", 140)
+        .attr("y", 170)
         .attr("fill", "white");
 
     // Sparkline for backpropagation visualization
@@ -48,12 +55,11 @@ export function createNeuronPopup(svg) {
         .attr("stroke", "white")
         .attr("stroke-width", 2);
 
-    return d3.select(popup.node()); 
+    return d3.select(popup.node());
 }
 
 export function updateNeuronPopup(popup, x, y, data) {
-    // Adjust these offsets to position the popup closer to the neuron
-    const xOffset = -100; // half the width of the popup
+    const xOffset = -100;
     const yOffset = -180;
 
     popup.attr("transform", `translate(${x + xOffset},${y + yOffset})`)
@@ -68,13 +74,18 @@ export function updateNeuronPopup(popup, x, y, data) {
     popup.select(".popup-bias")
         .text(`Bias: ${typeof data.bias === 'number' ? data.bias.toFixed(4) : data.bias}`);
 
+    // Update Pre-Activation
+    popup.select(".popup-pre-activation")
+        .text(`Pre-Activation: ${typeof data.preActivation === 'number' ? data.preActivation.toFixed(4) : data.preActivation}`);
+
+    // Update Post-Activation
     popup.select(".popup-activation")
-        .text(`Activation: ${typeof data.activation === 'number' ? data.activation.toFixed(4) : data.activation}`);
+        .text(`Post-Activation: ${typeof data.activation === 'number' ? data.activation.toFixed(4) : data.activation}`);
 
     popup.select(".popup-gradient")
         .text(`Gradient: ${typeof data.gradient === 'number' ? data.gradient.toFixed(4) : data.gradient}`);
 
-    // Update sparkline with actual backpropagation data if available
+    // Sparkline for backpropagation visualization
     if (data.backpropHistory && data.backpropHistory.length > 0) {
         const lineGenerator = d3.line()
             .x((d, i) => i * 20)
