@@ -157,6 +157,18 @@ document.addEventListener('DOMContentLoaded', () => {
 window.getHiddenLayerSizes = function() {
     return Object.values(hiddenLayers);
 };
+
+// Listen for reset event
+document.addEventListener('resetHiddenLayers', function(e) {
+    hiddenLayers = {1: 4, 2: 2}; // Reset to default
+    renderHiddenLayers();
+});
+
+// Listen for get sizes event
+document.addEventListener('getHiddenLayerSizes', function(e) {
+    const sizes = Object.values(hiddenLayers);
+    document.dispatchEvent(new CustomEvent('hiddenLayerSizesResult', { detail: sizes }));
+});
     </script>
 
     <!-- Import custom scripts -->
