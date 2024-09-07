@@ -6,36 +6,48 @@ import time
 import numpy as np
 
 class SimpleNeuralNetwork(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size, hidden_sizes, output_size):
         super(SimpleNeuralNetwork, self).__init__()
-        self.hidden = nn.Linear(input_size, hidden_size)  # This is input-to-hidden weights
-        self.output = nn.Linear(hidden_size, output_size)  # This is hidden-to-output weights
+
+        self.hidden_layers = nn.ModuleList()
+        previous_size = input_size
+
+        for hidden_size in hidden_sizes:
+            self.hidden_layers.append(nn.Linear(previous_size, hidden_size))
+            previous_size = hidden_size
+
+        self.output = nn.Linear(previous_size, output_size)
 
     def forward(self, x):
-        hidden_activation = F.gelu(self.hidden(x))
-        output = self.output(hidden_activation)
-        return output, hidden_activation
+        hidden_activations = []
+        for hidden_layer in self.hidden_layers:
+            x = F.gelu(hidden_layer(x))
+            hidden_activations.append(x)
+        
+        output = self.output(x)  # Final output layer
+        return output, hidden_activations
 
     def train_network(self, data, epochs, learning_rate, callback):
         criterion = nn.MSELoss()
         optimizer = optim.SGD(self.parameters(), lr=learning_rate)
-        all_activations = []  # Accumulate activations here
+        all_activations = []
 
         for epoch in range(epochs):
-            epoch_loss = 0  # Initialize epoch loss
-            batch_count = 0  # Initialize batch counter
+            epoch_loss = 0
+            batch_count = 0
             
             for inputs, targets in data:
-                time.sleep(0.05)  # Simulate delay
+                time.sleep(0.05)
                 
                 start_time = time.time()
                 optimizer.zero_grad()  # Reset gradients
 
                 # Forward pass
-                outputs, hidden_activation = self.forward(inputs)
+                outputs, hidden_activations = self.forward(inputs)
                 forward_time = time.time() - start_time
 
-                all_activations.append(hidden_activation.detach().cpu().numpy())
+                # Store all activations in each layer
+                all_activations.append([activation.detach().cpu().numpy() for activation in hidden_activations])
 
                 # Compute the loss
                 loss = criterion(outputs, targets)
@@ -48,22 +60,22 @@ class SimpleNeuralNetwork(nn.Module):
                 # Backward pass timing
                 backward_time = time.time() - start_time - forward_time
 
-                # Capture forward pass activations, backward pass gradients, and weights/biases
+                # Prepare forward and backward pass data for each hidden layer
                 forward_data = {
                     "input": inputs.tolist(),
-                    "hidden_activation": hidden_activation.tolist(),
+                    "hidden_activation": [activation.tolist() for activation in hidden_activations],
                     "output": outputs.tolist(),
                     "forward_time": forward_time
                 }
                 backward_data = {
-                    "hidden_grad": self.hidden.weight.grad.abs().tolist(),
+                    "hidden_grad": [layer.weight.grad.abs().tolist() for layer in self.hidden_layers],
                     "output_grad": self.output.weight.grad.abs().tolist(),
                     "backward_time": backward_time
                 }
                 weights_biases_data = {
-                    "input_weights": self.hidden.weight.detach().tolist(),  # Capture input-to-hidden weights
-                    "hidden_weights": self.output.weight.detach().tolist(),  # Hidden-to-output weights
-                    "hidden_biases": self.hidden.bias.detach().tolist(),
+                    "input_weights": self.hidden_layers[0].weight.detach().tolist(),
+                    "hidden_weights": [layer.weight.detach().tolist() for layer in self.hidden_layers],
+                    "hidden_biases": [layer.bias.detach().tolist() for layer in self.hidden_layers],
                     "output_weights": self.output.weight.detach().tolist(),
                     "output_biases": self.output.bias.detach().tolist()
                 }
