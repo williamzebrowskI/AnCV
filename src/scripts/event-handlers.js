@@ -97,8 +97,6 @@ document.getElementById('trainNetworkBtn').addEventListener('click', function ()
     // Get hidden layer sizes using the global function
     const hiddenLayerSizes = window.getHiddenLayerSizes();
 
-    console.log(hiddenLayerSizes)
-
     const trainingData = {
         inputNodes: parseInt(document.getElementById('inputNodes').value),
         hiddenLayers: hiddenLayerSizes,
@@ -110,12 +108,17 @@ document.getElementById('trainNetworkBtn').addEventListener('click', function ()
         batchSize: batchSize
     };
 
-    console.log('Emitting start_training event with the following data:', trainingData);
     socket.emit('start_training', trainingData);
 
     // Listen for the response when training starts
     socket.on('training_started', function(data) {
         console.log('Training started:', data.message);
+    });
+
+    socket.on('training_stopped', function(data) {
+        console.log('Training stopped:', data.message);
+        trainBtn.disabled = false;
+        trainBtn.classList.remove('disabled-btn');
     });
 
     // Re-enable the "Train" button after training is completed (or in the stop handler)
