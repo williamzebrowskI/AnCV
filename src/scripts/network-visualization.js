@@ -6,6 +6,7 @@ let links = []; // Global array to track connections/links between nodes
 let selectedNodeIndex = null;  // Track the index of the selected node
 
 export function drawNeuralNetwork(layers, weights) {
+    console.log("Drawing neural network with layers:", layers);
     console.log("Received weights:", weights);
     d3.select("#visualization").html(""); // Clear previous SVG
 
@@ -18,29 +19,28 @@ export function drawNeuralNetwork(layers, weights) {
     const layerSpacing = width / (layers.length + 1);
     const nodeRadius = 20;
 
-    let selectedNode = null;  // Track the currently selected node
-    let selectedNodeIndex = null;  // Track the index of the selected node
-
     nodes = []; // Clear the global nodes array before redrawing
     links = []; // Clear the global links array before redrawing
 
-    // Create nodes
+    // Create nodes for each layer (including dynamic hidden layers)
     layers.forEach((layerSize, layerIndex) => {
-        const x = layerSpacing * (layerIndex + 1);
-        const ySpacing = height / (layerSize + 1);
+        const x = layerSpacing * (layerIndex + 1); // Position each layer horizontally
+        const ySpacing = height / (layerSize + 1); // Position nodes vertically within the layer
 
+        // Create nodes within each layer
         for (let i = 0; i < layerSize; i++) {
-            const y = ySpacing * (i + 1);
+            const y = ySpacing * (i + 1); // Calculate y position for each node
 
             let layerLabel;
             if (layerIndex === 0) {
-                layerLabel = "Input";
+                layerLabel = "Input";  // Label input layer
             } else if (layerIndex === layers.length - 1) {
-                layerLabel = "Output";
+                layerLabel = "Output"; // Label output layer
             } else {
-                layerLabel = "Hidden";
+                layerLabel = `Hidden Layer ${layerIndex}`; // Label hidden layers
             }
 
+            // Create the visual node (circle)
             const node = svg.append("circle")
                 .attr("cx", x)
                 .attr("cy", y)
@@ -55,17 +55,14 @@ export function drawNeuralNetwork(layers, weights) {
                 )
                 .on("mouseover", function () {
                     d3.select(this).style("stroke", "rgba(255, 99, 132, 1)").style("stroke-width", "4px");
-                
-                    // Display a white box with details on hover
+
+                    // Display hover box with layer details
                     const boxWidth = 120;
                     const boxHeight = 50;
                     const boxX = parseFloat(d3.select(this).attr("cx")) - boxWidth / 2;
                     const boxY = parseFloat(d3.select(this).attr("cy")) - nodeRadius - boxHeight - 10;
-                
-                    // Append the group container for the box and text
-                    const hoverGroup = svg.append("g")
-                        .attr("class", "hover-box");
-                
+
+                    const hoverGroup = svg.append("g").attr("class", "hover-box");
                     hoverGroup.append("rect")
                         .attr("x", boxX)
                         .attr("y", boxY)
@@ -75,8 +72,7 @@ export function drawNeuralNetwork(layers, weights) {
                         .attr("stroke", "rgba(255, 99, 132, 1)")
                         .attr("rx", 10)
                         .attr("ry", 10);
-                
-                    // Create the text label inside the box
+
                     hoverGroup.append("text")
                         .attr("x", boxX + boxWidth / 2)
                         .attr("y", boxY + 20)
@@ -84,9 +80,8 @@ export function drawNeuralNetwork(layers, weights) {
                         .attr("font-size", "14px")
                         .attr("text-anchor", "middle")
                         .attr("class", "hover-text")
-                        .text(`${layerLabel} Layer`);
-                
-                    // Add another placeholder text for future details
+                        .text(`${layerLabel} Node`);
+
                     hoverGroup.append("text")
                         .attr("x", boxX + boxWidth / 2)
                         .attr("y", boxY + 40)
@@ -94,39 +89,39 @@ export function drawNeuralNetwork(layers, weights) {
                         .attr("font-size", "12px")
                         .attr("text-anchor", "middle")
                         .attr("class", "hover-text")
-                        .text("Details...");
+                        .text(`Index: ${i}`);
                 })
                 .on("mouseout", function () {
-                    if (!d3.select(this).classed("selected")) {
-                        d3.select(this).style("stroke", "white"); // Reset stroke color
-                        d3.select(this).style("stroke-width", "2px"); // Reset to original stroke width
-                        svg.selectAll(".hover-box").remove(); // Remove the hover group, including box and text
-                    }
-                })
+                    d3.select(this).style("stroke", "white").style("stroke-width", "2px");
+                    svg.selectAll(".hover-box").remove(); // Remove the hover group, including box and text
+                });
 
-            nodes.push({ layerIndex, i, x, y, node: node.node() });
+            nodes.push({ layerIndex, i, x, y, node: node.node() }); // Add node to global node list
         }
     });
 
-    // Create links (lines between nodes)
+    // Create links (connections between nodes in adjacent layers)
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex < layers.length - 1) {
             const nextLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex + 1);
+            console.log(`Creating connections from layer ${sourceNode.layerIndex} to layer ${sourceNode.layerIndex + 1}`);
+            console.log(`Number of nodes in current layer: ${nodes.filter(node => node.layerIndex === sourceNode.layerIndex).length}`);
+            console.log(`Number of nodes in next layer: ${nextLayerNodes.length}`);
 
             nextLayerNodes.forEach((targetNode, j) => {
+                console.log(`Creating connection from node ${sourceNode.i} to node ${j}`);
+                
+                // Determine the weight
                 let weight;
-
-                // Handle input-to-hidden weights
-                if (sourceNode.layerIndex === 0) {
-                    weight = weights && weights[`input_weights`] && weights[`input_weights`][j]
-                        ? weights[`input_weights`][j][sourceNode.i]
-                        : 0.5; // Default weight if undefined
-                } else {
-                    // Handle hidden-to-hidden or hidden-to-output weights
-                    weight = weights && weights[`hidden_weights`] && weights[`hidden_weights`][j]
-                        ? weights[`hidden_weights`][j][sourceNode.i]
-                        : 0.5; // Default weight if undefined
+                if (sourceNode.layerIndex === 0 && weights && weights.input_weights) {
+                    weight = weights.input_weights[j] ? weights.input_weights[j][sourceNode.i] : null;
+                } else if (sourceNode.layerIndex === layers.length - 2 && weights && weights.output_weights) {
+                    weight = weights.output_weights[j] ? weights.output_weights[j][sourceNode.i] : null;
+                } else if (weights && weights.hidden_weights && weights.hidden_weights[sourceNode.layerIndex]) {
+                    weight = weights.hidden_weights[sourceNode.layerIndex][j] ? weights.hidden_weights[sourceNode.layerIndex][j][sourceNode.i] : null;
                 }
+
+                console.log(`Weight for this connection: ${weight !== null ? weight : 'Not available'}`);
 
                 const line = svg.append("line")
                     .attr("x1", sourceNode.x)
@@ -135,32 +130,34 @@ export function drawNeuralNetwork(layers, weights) {
                     .attr("y2", targetNode.y)
                     .attr("stroke", "#ccc")
                     .attr("stroke-width", 2)
-                    .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`)
-                    .on("mouseover", function () {
-                        // Highlight the line
-                        d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4);
+                    .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
 
-                        // Display the weight in a tooltip
-                        const tooltip = svg.append("text")
-                            .attr("x", (sourceNode.x + targetNode.x) / 2)
-                            .attr("y", (sourceNode.y + targetNode.y) / 2 - 10)
-                            .attr("fill", "white")
-                            .attr("font-size", "14px")
-                            .attr("text-anchor", "middle")
-                            .text(`Weight: ${(weight || 0).toFixed(4)}`); // Show the weight
+                line.on("mouseover", function() {
+                    d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4);
+                    
+                    let weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
+                    
+                    const tooltip = svg.append("text")
+                        .attr("x", (sourceNode.x + targetNode.x) / 2)
+                        .attr("y", (sourceNode.y + targetNode.y) / 2 - 10)
+                        .attr("fill", "white")
+                        .attr("font-size", "14px")
+                        .attr("text-anchor", "middle")
+                        .text(`Weight: ${weightText}`);
 
-                        // Handle mouseout event to reset the line and remove the tooltip
-                        d3.select(this).on("mouseout", function () {
-                            d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2);
-                            tooltip.remove(); // Remove the tooltip on mouseout
-                        });
+                    d3.select(this).on("mouseout", function() {
+                        d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2);
+                        tooltip.remove();
                     });
+                });
 
                 links.push({ source: sourceNode, target: targetNode, line, weight });
             });
         }
     });
 }
+
+console.log(`Total number of links created: ${links.length}`);
 // Drag and drop behavior for the nodes
 export function dragStarted(event, d) {
     d3.select(this).raise().attr("stroke", "black");
@@ -388,3 +385,4 @@ export function clearNetwork() {
     nodes = [];
     links = [];
 }
+

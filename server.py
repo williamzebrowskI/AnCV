@@ -29,9 +29,9 @@ def raise_exception_in_thread(thread, exc_type):
 def reset_network_state():
     global nn
     input_size = 5
-    hidden_size = 4
+    hidden_sizes = [3, 2]  # Default hidden layers
     output_size = 1
-    nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
+    nn = SimpleNeuralNetwork(input_size, hidden_sizes, output_size)
     return {"message": "Neural network has been reset to initial state."}
 
 @app.route('/reset', methods=['POST'])
@@ -42,18 +42,18 @@ def reset_network():
 def handle_start_training(data):
     global training_thread
     input_size = data['inputNodes']
-    hidden_size = data['hiddenLayers'][0]
+    hidden_sizes = data['hiddenLayers']
     output_size = data['outputNodes']
     epochs = data['epochs']
     learning_rate = data['learningRate']
-    num_data_points = data['numDataPoints']
+    num_data_points = data['numDataPoints'] 
     noise_level = data['noiseLevel']
     batch_size = data.get('batchSize', 1)
 
+    print(hidden_sizes)
+
     training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size)
-    print(f"Hidden Size: {hidden_size}")
-    print(f"Output Size: {output_size}")
-    nn = SimpleNeuralNetwork(input_size, hidden_size, output_size)
+    nn = SimpleNeuralNetwork(input_size, hidden_sizes, output_size)
 
     def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations, input_size):
 
@@ -95,12 +95,14 @@ def handle_start_training(data):
                 training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations, input_size)
 
             nn.train_network(training_data, epochs, learning_rate, callback=wrapped_callback)
+            socketio.emit('training_completed', {"message": "Training completed successfully"})
         except SystemExit:
             print("Training stopped.")
+            socketio.emit('training_stopped', {"message": "Training stopped"})
         except Exception as e:
             print(f"Training interrupted: {e}")
-
-        # Start the training in a new thread
+            socketio.emit('training_error', {"message": f"Training error: {str(e)}"})
+    # Start the training in a new thread
     training_thread = Thread(target=train_model)
     training_thread.start()
 

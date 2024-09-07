@@ -14,8 +14,11 @@
         <label for="inputNodes">Input Nodes:</label>
         <input type="number" id="inputNodes" value="4" min="1">
 
-        <label for="hiddenLayers">Hidden Layers:</label>
-        <input type="text" id="hiddenLayers" value="3,2"> <!-- Comma-separated values for each hidden layer -->
+        <h3>Hidden Layers</h3>
+        <div id="hiddenLayersContainer">
+        </div>
+        <button id="addHiddenLayerBtn">Add Hidden Layer</button>
+        <button id="removeHiddenLayerBtn">Remove Hidden Layer</button>
 
         <label for="outputNodes">Output Nodes:</label>
         <input type="number" id="outputNodes" value="1" min="1">
@@ -63,25 +66,109 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/controls/OrbitControls.js"></script>
 
-    <script>
-        var socket = io.connect('http://127.0.0.1:5000');
+    <script type="module">
+import { drawNeuralNetwork } from './src/scripts/network-visualization.js';
 
-        socket.on('connect', function() {
-            console.log("WebSocket connection established");
-        });
+let hiddenLayers = {1:4, 2:2}; // Dictionary to store hidden layers and their sizes
 
-        socket.on('training_update', function(data) {
-            console.log("Training update:", data);
-            // You can update your UI with the data here (e.g., display the current epoch and loss)
-        });
+const inputNodesElement = document.getElementById('inputNodes');
+const outputNodesElement = document.getElementById('outputNodes');
+const hiddenLayersContainer = document.getElementById('hiddenLayersContainer');
+const addHiddenLayerBtn = document.getElementById('addHiddenLayerBtn');
+const removeHiddenLayerBtn = document.getElementById('removeHiddenLayerBtn');
 
-        socket.on('disconnect', function() {
-            console.log("WebSocket connection closed");
-        });
+function updateNetworkVisualization() {
+    const inputNodes = parseInt(inputNodesElement.value);
+    const outputNodes = parseInt(outputNodesElement.value);
+    const hiddenLayerSizes = Object.values(hiddenLayers);
 
-        socket.on('stop_training', function() {
-            console.log("Training Stopped");
+    console.log('Hidden layer sizes:', hiddenLayerSizes);
+
+    // Combine input, hidden, and output layer sizes
+    const layers = [inputNodes, ...hiddenLayerSizes, outputNodes];
+
+    console.log('Network structure:', layers);
+
+    // Draw the network with updated layers
+    drawNeuralNetwork(layers, null);  // Pass null for weights if not using weights here
+}
+
+function renderHiddenLayers() {
+    hiddenLayersContainer.innerHTML = ''; // Clear existing layers
+    Object.entries(hiddenLayers).forEach(([index, size]) => {
+        const layerDiv = document.createElement('div');
+        layerDiv.innerHTML = `
+            <label for="hiddenLayerSize${index}">Hidden Layer ${index} Size:</label>
+            <input type="number" id="hiddenLayerSize${index}" value="${size}" min="1">
+        `;
+        hiddenLayersContainer.appendChild(layerDiv);
+
+        const input = layerDiv.querySelector('input');
+        input.addEventListener('input', () => {
+            hiddenLayers[index] = parseInt(input.value);
+            updateNetworkVisualization();
         });
+    });
+}
+
+function addHiddenLayer() {
+    const newIndex = Object.keys(hiddenLayers).length + 1;
+    hiddenLayers[newIndex] = 2; // Default size of 2
+    renderHiddenLayers();
+    updateNetworkVisualization();
+    console.log('Hidden layer added. New structure:', hiddenLayers);
+}
+
+function removeHiddenLayer() {
+    const lastIndex = Object.keys(hiddenLayers).length;
+    if (lastIndex > 0) {
+        delete hiddenLayers[lastIndex];
+        renderHiddenLayers();
+        updateNetworkVisualization();
+        console.log('Hidden layer removed. New structure:', hiddenLayers);
+    }
+}
+
+function initializeExistingLayers() {
+    const existingLayers = hiddenLayersContainer.querySelectorAll('input[type="number"]');
+    existingLayers.forEach((input, index) => {
+        hiddenLayers[index + 1] = parseInt(input.value);
+    });
+    renderHiddenLayers();
+    console.log('Initialized existing layers:', hiddenLayers);
+}
+
+// Add event listeners to buttons
+addHiddenLayerBtn.addEventListener('click', addHiddenLayer);
+removeHiddenLayerBtn.addEventListener('click', removeHiddenLayer);
+
+// Add listeners to input and output node elements
+inputNodesElement.addEventListener('input', updateNetworkVisualization);
+outputNodesElement.addEventListener('input', updateNetworkVisualization);
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM fully loaded. Initializing network visualization.');
+    initializeExistingLayers();
+    updateNetworkVisualization();
+});
+
+// Add this function
+window.getHiddenLayerSizes = function() {
+    return Object.values(hiddenLayers);
+};
+
+// Listen for reset event
+document.addEventListener('resetHiddenLayers', function(e) {
+    hiddenLayers = {1: 4, 2: 2}; // Reset to default
+    renderHiddenLayers();
+});
+
+// Listen for get sizes event
+document.addEventListener('getHiddenLayerSizes', function(e) {
+    const sizes = Object.values(hiddenLayers);
+    document.dispatchEvent(new CustomEvent('hiddenLayerSizesResult', { detail: sizes }));
+});
     </script>
 
     <!-- Import custom scripts -->
@@ -89,7 +176,5 @@
     <script type="module" src="src/scripts/chart-logic.js"></script>
     <script type="module" src="src/scripts/event-handlers.js"></script>
     <script type="module" src="src/scripts/network-visualization.js"></script>
-    
-
 </body>
 </html>
