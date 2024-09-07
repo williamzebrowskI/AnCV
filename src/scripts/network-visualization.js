@@ -77,6 +77,9 @@ export function drawNeuralNetwork(layers, weights, data) {
                     clearTimeout(hidePopupTimeout);
                     d3.select(this).style("stroke", "rgba(255, 99, 132, 1)").style("stroke-width", "4px");
                 
+                    // Disable pointer events on the lines when the popup is shown
+                    d3.selectAll("line").style("pointer-events", "none");
+                
                     // Ensure hover works even if data is missing
                     let preActivation = 'N/A';
                     let postActivation = 'N/A';
