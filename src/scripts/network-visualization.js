@@ -9,11 +9,15 @@ let popup;
 let isOverNode = false;
 let isOverPopup = false;
 let hidePopupTimeout;
+let selectedNodeIndex = 0
 
-export function drawNeuralNetwork(layers, weights) {
+export function drawNeuralNetwork(layers, weights, data) {
+
     console.log("Drawing neural network with layers:", layers);
     console.log("Received weights:", weights);
     d3.select("#visualization").html("");
+
+    const forwardData = data ? data.forward_data : null; 
 
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -72,17 +76,38 @@ export function drawNeuralNetwork(layers, weights) {
                     isOverNode = true;
                     clearTimeout(hidePopupTimeout);
                     d3.select(this).style("stroke", "rgba(255, 99, 132, 1)").style("stroke-width", "4px");
-
+                
+                    // Ensure hover works even if data is missing
+                    let preActivation = 'N/A';
+                    let postActivation = 'N/A';
+                
+                    // Handle hidden layers
+                    if (layerIndex > 0 && layerIndex < layers.length - 1) {
+                        // Handle hidden layers' pre and post activation
+                        if (forwardData && forwardData.hidden_activation && forwardData.hidden_activation.length > layerIndex - 1) {
+                            preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation[i] || 'N/A';
+                            postActivation = forwardData.hidden_activation[layerIndex - 1].post_activation[i] || 'N/A';
+                        }
+                    }
+                
+                    // Handle the output layer
+                    if (layerIndex === layers.length - 1) {
+                        if (forwardData && forwardData.output && forwardData.output.length > i) {
+                            postActivation = forwardData.output[i] || 'N/A'; // No pre-activation for output layer
+                        }
+                    }
+                
                     const nodeData = {
                         layerType: layerType,
                         nodeIndex: i,
                         weight: 'N/A',
                         bias: 'N/A',
-                        activation: 'N/A',
+                        preActivation: Array.isArray(preActivation) ? d3.mean(preActivation) : preActivation,  // Handle array if necessary
+                        activation: Array.isArray(postActivation) ? d3.mean(postActivation) : postActivation,   // Handle array if necessary
                         gradient: 'N/A',
                         backpropHistory: []
                     };
-
+                
                     updateNeuronPopup(popup, event.pageX, event.pageY, nodeData);
                     popup.style("display", "block");
                 })
@@ -245,24 +270,6 @@ export function animateDataFlow(data) {
         console.log(`Updating loss chart for epoch ${index + 1}, loss: ${epochData.loss}`);
         updateLossChart(epochData.epoch, epochData.loss);
     });
-
-    // Reapply selection styling after each epoch
-    if (selectedNodeIndex !== null) {
-        const selectedNode = nodes[selectedNodeIndex];
-        d3.select(selectedNode.node)
-            .style("stroke", "rgba(255, 99, 132, 1)")
-            .style("stroke-width", "4px");
-
-        // Reapply the label
-        svg.selectAll(".layer-label").remove();  // Remove any existing label
-        svg.append("text")
-            .attr("x", selectedNode.x)
-            .attr("y", selectedNode.y - 25)
-            .attr("fill", "white")
-            .attr("font-size", "14px")
-            .attr("class", "layer-label")
-            .text("Layer");
-    }
 }
 
 export function animateForwardPass(forwardData, svg, duration) {
