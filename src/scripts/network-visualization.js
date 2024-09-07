@@ -1,14 +1,19 @@
+
 import { updateLossChart } from "./chart-logic.js";
 import { stopTraining } from './event-handlers.js';
+import { createNeuronPopup, updateNeuronPopup, hideNeuronPopup } from './neuron/neuron-info.js';
 
-let nodes = []; // Keep this global to track all nodes for connections
-let links = []; // Global array to track connections/links between nodes
-let selectedNodeIndex = null;  // Track the index of the selected node
+let nodes = [];
+let links = [];
+let popup;
+let isOverNode = false;
+let isOverPopup = false;
+let hidePopupTimeout;
 
 export function drawNeuralNetwork(layers, weights) {
     console.log("Drawing neural network with layers:", layers);
     console.log("Received weights:", weights);
-    d3.select("#visualization").html(""); // Clear previous SVG
+    d3.select("#visualization").html("");
 
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -19,28 +24,38 @@ export function drawNeuralNetwork(layers, weights) {
     const layerSpacing = width / (layers.length + 1);
     const nodeRadius = 20;
 
-    nodes = []; // Clear the global nodes array before redrawing
-    links = []; // Clear the global links array before redrawing
+    nodes = [];
+    links = [];
 
-    // Create nodes for each layer (including dynamic hidden layers)
+    // Create the popup
+    popup = createNeuronPopup(svg);
+
+    popup.on("mouseenter", () => {
+        isOverPopup = true;
+        clearTimeout(hidePopupTimeout);
+    }).on("mouseleave", () => {
+        isOverPopup = false;
+        if (!isOverNode) {
+            hideNeuronPopup(popup);
+        }
+    });
+
     layers.forEach((layerSize, layerIndex) => {
-        const x = layerSpacing * (layerIndex + 1); // Position each layer horizontally
-        const ySpacing = height / (layerSize + 1); // Position nodes vertically within the layer
+        const x = layerSpacing * (layerIndex + 1);
+        const ySpacing = height / (layerSize + 1);
 
-        // Create nodes within each layer
+        let layerType;
+        if (layerIndex === 0) {
+            layerType = "Input";
+        } else if (layerIndex === layers.length - 1) {
+            layerType = "Output";
+        } else {
+            layerType = `Hidden Layer ${layerIndex}`;
+        }
+
         for (let i = 0; i < layerSize; i++) {
-            const y = ySpacing * (i + 1); // Calculate y position for each node
+            const y = ySpacing * (i + 1);
 
-            let layerLabel;
-            if (layerIndex === 0) {
-                layerLabel = "Input";  // Label input layer
-            } else if (layerIndex === layers.length - 1) {
-                layerLabel = "Output"; // Label output layer
-            } else {
-                layerLabel = `Hidden Layer ${layerIndex}`; // Label hidden layers
-            }
-
-            // Create the visual node (circle)
             const node = svg.append("circle")
                 .attr("cx", x)
                 .attr("cy", y)
@@ -53,65 +68,45 @@ export function drawNeuralNetwork(layers, weights) {
                     .on("drag", dragged)
                     .on("end", dragEnded)
                 )
-                .on("mouseover", function () {
+                .on("mouseenter", function (event) {
+                    isOverNode = true;
+                    clearTimeout(hidePopupTimeout);
                     d3.select(this).style("stroke", "rgba(255, 99, 132, 1)").style("stroke-width", "4px");
 
-                    // Display hover box with layer details
-                    const boxWidth = 120;
-                    const boxHeight = 50;
-                    const boxX = parseFloat(d3.select(this).attr("cx")) - boxWidth / 2;
-                    const boxY = parseFloat(d3.select(this).attr("cy")) - nodeRadius - boxHeight - 10;
+                    const nodeData = {
+                        layerType: layerType,
+                        nodeIndex: i,
+                        weight: 'N/A',
+                        bias: 'N/A',
+                        activation: 'N/A',
+                        gradient: 'N/A',
+                        backpropHistory: []
+                    };
 
-                    const hoverGroup = svg.append("g").attr("class", "hover-box");
-                    hoverGroup.append("rect")
-                        .attr("x", boxX)
-                        .attr("y", boxY)
-                        .attr("width", boxWidth)
-                        .attr("height", boxHeight)
-                        .attr("fill", "white")
-                        .attr("stroke", "rgba(255, 99, 132, 1)")
-                        .attr("rx", 10)
-                        .attr("ry", 10);
-
-                    hoverGroup.append("text")
-                        .attr("x", boxX + boxWidth / 2)
-                        .attr("y", boxY + 20)
-                        .attr("fill", "black")
-                        .attr("font-size", "14px")
-                        .attr("text-anchor", "middle")
-                        .attr("class", "hover-text")
-                        .text(`${layerLabel} Node`);
-
-                    hoverGroup.append("text")
-                        .attr("x", boxX + boxWidth / 2)
-                        .attr("y", boxY + 40)
-                        .attr("fill", "gray")
-                        .attr("font-size", "12px")
-                        .attr("text-anchor", "middle")
-                        .attr("class", "hover-text")
-                        .text(`Index: ${i}`);
+                    updateNeuronPopup(popup, event.pageX, event.pageY, nodeData);
+                    popup.style("display", "block");
                 })
-                .on("mouseout", function () {
+                .on("mouseleave", function () {
+                    isOverNode = false;
                     d3.select(this).style("stroke", "white").style("stroke-width", "2px");
-                    svg.selectAll(".hover-box").remove(); // Remove the hover group, including box and text
+                    hidePopupTimeout = setTimeout(() => {
+                        if (!isOverPopup) {
+                            hideNeuronPopup(popup);
+                        }
+                    }, 100);
                 });
 
-            nodes.push({ layerIndex, i, x, y, node: node.node() }); // Add node to global node list
+            nodes.push({ layerIndex, i, x, y, node: node.node(), layerType });
         }
     });
+
 
     // Create links (connections between nodes in adjacent layers)
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex < layers.length - 1) {
             const nextLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex + 1);
-            console.log(`Creating connections from layer ${sourceNode.layerIndex} to layer ${sourceNode.layerIndex + 1}`);
-            console.log(`Number of nodes in current layer: ${nodes.filter(node => node.layerIndex === sourceNode.layerIndex).length}`);
-            console.log(`Number of nodes in next layer: ${nextLayerNodes.length}`);
 
             nextLayerNodes.forEach((targetNode, j) => {
-                console.log(`Creating connection from node ${sourceNode.i} to node ${j}`);
-                
-                // Determine the weight
                 let weight;
                 if (sourceNode.layerIndex === 0 && weights && weights.input_weights) {
                     weight = weights.input_weights[j] ? weights.input_weights[j][sourceNode.i] : null;
@@ -120,8 +115,6 @@ export function drawNeuralNetwork(layers, weights) {
                 } else if (weights && weights.hidden_weights && weights.hidden_weights[sourceNode.layerIndex]) {
                     weight = weights.hidden_weights[sourceNode.layerIndex][j] ? weights.hidden_weights[sourceNode.layerIndex][j][sourceNode.i] : null;
                 }
-
-                console.log(`Weight for this connection: ${weight !== null ? weight : 'Not available'}`);
 
                 const line = svg.append("line")
                     .attr("x1", sourceNode.x)
@@ -132,7 +125,7 @@ export function drawNeuralNetwork(layers, weights) {
                     .attr("stroke-width", 2)
                     .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
 
-                line.on("mouseover", function() {
+                line.on("mouseenter", function(event) {
                     d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4);
                     
                     let weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
@@ -145,7 +138,7 @@ export function drawNeuralNetwork(layers, weights) {
                         .attr("text-anchor", "middle")
                         .text(`Weight: ${weightText}`);
 
-                    d3.select(this).on("mouseout", function() {
+                    d3.select(this).on("mouseleave", function() {
                         d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2);
                         tooltip.remove();
                     });
@@ -157,10 +150,21 @@ export function drawNeuralNetwork(layers, weights) {
     });
 }
 
-console.log(`Total number of links created: ${links.length}`);
-// Drag and drop behavior for the nodes
 export function dragStarted(event, d) {
     d3.select(this).raise().attr("stroke", "black");
+    const draggedNode = nodes.find(n => n.node === this);
+    if (draggedNode) {
+        updateNeuronPopup(popup, event.sourceEvent.pageX, event.sourceEvent.pageY, {
+            layerType: draggedNode.layerType,
+            nodeIndex: draggedNode.i,
+            weight: 'N/A',
+            bias: 'N/A',
+            activation: 'N/A',
+            gradient: 'N/A',
+            backpropHistory: []
+        });
+        popup.style("display", "block");
+    }
 }
 
 export function dragged(event, d) {
@@ -183,24 +187,23 @@ export function dragged(event, d) {
     // Update the connections as the node is dragged
     updateConnections(draggedNode);
 
-    // Ensure the svg reference is captured in the scope of this function
-    const svg = d3.select("#visualization svg");
-    const nodeRadius = 20;  // Define nodeRadius if not globally available
-    const boxWidth = 120;  // Define box width
-    const boxHeight = 50;   // Define box height
-
-    // Move the hover box and text together
-    svg.selectAll(".hover-box rect")
-        .attr("x", event.x - boxWidth / 2)
-        .attr("y", event.y - nodeRadius - boxHeight - 10);
-
-    svg.selectAll(".hover-text")
-        .attr("x", event.x)
-        .attr("y", (d, i) => event.y - nodeRadius - boxHeight - 10 + (i + 1) * 20);
+    // Update the popup position
+    updateNeuronPopup(popup, event.sourceEvent.pageX, event.sourceEvent.pageY, {
+        layerType: draggedNode.layerType,
+        nodeIndex: draggedNode.i,
+        weight: 'N/A',
+        bias: 'N/A',
+        activation: 'N/A',
+        gradient: 'N/A',
+        backpropHistory: []
+    });
 }
 
 export function dragEnded(event, d) {
     d3.select(this).attr("stroke", "white");
+    if (!isOverPopup) {
+        hideNeuronPopup(popup);
+    }
 }
 
 export function updateConnections(draggedNode) {
