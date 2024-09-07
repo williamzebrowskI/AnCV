@@ -1,6 +1,9 @@
 import * as networkVisualization from './network-visualization.js';
 import { updateLossChart, resetLossChart, handleExpandLossDisplay } from './chart-logic.js';
+import { drawNeuralNetwork } from './network-visualization.js'; 
 
+let hiddenLayersContainer = document.getElementById('hiddenLayersContainer');
+let hiddenLayerCount = 0;
 export let stopTraining = false;
 
 // Create the WebSocket connection to the server
@@ -16,31 +19,58 @@ socket.on('disconnect', function() {
     console.log("Disconnected from WebSocket server");
 });
 
-// Ensure this is only set once, not every time 'trainNetworkBtn' is clicked
 if (!socket.hasListeners('training_update')) {
     socket.on('training_update', function(data) {
         if (stopTraining) return;  // Stop updating the UI if training has stopped
-
+        
         const inputSize = data.input_size;
-
-        // Get hidden layers and output nodes from the form
-        const hiddenLayers = document.getElementById('hiddenLayers').value.split(',').map(Number);
+        
+        // Get hidden layer sizes using the global function
+        const hiddenLayerSizes = window.getHiddenLayerSizes();
+        
+        // Get output nodes from the form
         const outputNodes = parseInt(document.getElementById('outputNodes').value);
-
-        const layers = [inputSize, ...hiddenLayers, outputNodes];
-
+        
+        // Construct the layers array
+        const layers = [inputSize, ...hiddenLayerSizes, outputNodes];
+        
         // Draw the updated network
         networkVisualization.drawNeuralNetwork(layers, data.weights_biases_data);
-
+        
         // Optionally animate forward and backward passes
         networkVisualization.animateDataFlow(data);
     });
 }
+
+function redrawNetwork() {
+    let inputNodes = parseInt(document.getElementById('inputNodes').value);
+    let outputNodes = parseInt(document.getElementById('outputNodes').value);
+    let hiddenLayers = [];
+
+    for (let i = 1; i <= hiddenLayerCount; i++) {
+        let hiddenLayerSize = parseInt(document.getElementById(`hiddenLayerSize${i}`).value);
+        hiddenLayers.push(hiddenLayerSize);
+    }
+
+    const layers = [inputNodes, ...hiddenLayers, outputNodes];
+    
+    // Call the drawNeuralNetwork function to redraw the network with updated layers
+    drawNeuralNetwork(layers, null);  // 'null' for weights if not available
+}
+
+// Optionally, you can call redrawNetwork() initially to draw the network at the start
+document.addEventListener('DOMContentLoaded', function() {
+    redrawNetwork();  // Draw the network with default values when the page loads
+});
+
 // Handle document load event to set initial visualization
 document.addEventListener('DOMContentLoaded', function() {
     // Set default values for the neural network
     const inputNodes = parseInt(document.getElementById('inputNodes').value);
-    const hiddenLayers = document.getElementById('hiddenLayers').value.split(',').map(Number);
+    const hiddenLayers = [];
+        document.querySelectorAll('#hiddenLayersContainer input').forEach(input => {
+            hiddenLayers.push(parseInt(input.value));
+    });
     const outputNodes = parseInt(document.getElementById('outputNodes').value);
     
     const layers = [inputNodes, ...hiddenLayers, outputNodes];
@@ -55,38 +85,33 @@ document.addEventListener('DOMContentLoaded', function() {
 document.getElementById('trainNetworkBtn').addEventListener('click', function () {
     stopTraining = false;  // Reset stop flag
     const trainBtn = document.getElementById('trainNetworkBtn');
-
     trainBtn.disabled = true;  // Disable the button
     trainBtn.classList.add('disabled-btn');  // Add the class for visual effect
-
+    
     const epochs = parseInt(document.getElementById('epochs').value);
     const learningRate = parseFloat(document.getElementById('learningRate').value);
     const numDataPoints = parseInt(document.getElementById('numDataPoints').value);
     const noiseLevel = parseFloat(document.getElementById('noiseLevel').value);
     const batchSize = parseInt(document.getElementById('batchSize').value);
+    
+    // Get hidden layer sizes using the global function
+    const hiddenLayerSizes = window.getHiddenLayerSizes();
 
-    // Emit the training data to the backend via socket
-    console.log('Emitting start_training event with the following data:', {
+    console.log(hiddenLayerSizes)
+
+    const trainingData = {
         inputNodes: parseInt(document.getElementById('inputNodes').value),
-        hiddenLayers: document.getElementById('hiddenLayers').value.split(',').map(Number),
+        hiddenLayers: hiddenLayerSizes,
         outputNodes: parseInt(document.getElementById('outputNodes').value),
         epochs: epochs,
         learningRate: learningRate,
         numDataPoints: numDataPoints,
         noiseLevel: noiseLevel,
         batchSize: batchSize
-    });
+    };
 
-    socket.emit('start_training', {
-        inputNodes: parseInt(document.getElementById('inputNodes').value),
-        hiddenLayers: document.getElementById('hiddenLayers').value.split(',').map(Number),
-        outputNodes: parseInt(document.getElementById('outputNodes').value),
-        epochs: epochs,
-        learningRate: learningRate,
-        numDataPoints: numDataPoints,
-        noiseLevel: noiseLevel,
-        batchSize: batchSize
-    });
+    console.log('Emitting start_training event with the following data:', trainingData);
+    socket.emit('start_training', trainingData);
 
     // Listen for the response when training starts
     socket.on('training_started', function(data) {
