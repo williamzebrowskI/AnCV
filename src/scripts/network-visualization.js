@@ -104,10 +104,24 @@ export function drawNeuralNetwork(layers, weights) {
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex < layers.length - 1) {
             const nextLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex + 1);
+            console.log(`Creating connections from layer ${sourceNode.layerIndex} to layer ${sourceNode.layerIndex + 1}`);
+            console.log(`Number of nodes in current layer: ${nodes.filter(node => node.layerIndex === sourceNode.layerIndex).length}`);
+            console.log(`Number of nodes in next layer: ${nextLayerNodes.length}`);
+
             nextLayerNodes.forEach((targetNode, j) => {
-                let weight = (weights && weights[`hidden_weights`] && weights[`hidden_weights`][j])
-                    ? weights[`hidden_weights`][j][sourceNode.i]
-                    : 0.5; // Default weight
+                console.log(`Creating connection from node ${sourceNode.i} to node ${j}`);
+                
+                // Determine the weight
+                let weight;
+                if (sourceNode.layerIndex === 0 && weights && weights.input_weights) {
+                    weight = weights.input_weights[j] ? weights.input_weights[j][sourceNode.i] : null;
+                } else if (sourceNode.layerIndex === layers.length - 2 && weights && weights.output_weights) {
+                    weight = weights.output_weights[j] ? weights.output_weights[j][sourceNode.i] : null;
+                } else if (weights && weights.hidden_weights && weights.hidden_weights[sourceNode.layerIndex]) {
+                    weight = weights.hidden_weights[sourceNode.layerIndex][j] ? weights.hidden_weights[sourceNode.layerIndex][j][sourceNode.i] : null;
+                }
+
+                console.log(`Weight for this connection: ${weight !== null ? weight : 'Not available'}`);
 
                 const line = svg.append("line")
                     .attr("x1", sourceNode.x)
@@ -116,29 +130,34 @@ export function drawNeuralNetwork(layers, weights) {
                     .attr("y2", targetNode.y)
                     .attr("stroke", "#ccc")
                     .attr("stroke-width", 2)
-                    .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`)
-                    .on("mouseover", function () {
-                        d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4);
+                    .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
 
-                        const tooltip = svg.append("text")
-                            .attr("x", (sourceNode.x + targetNode.x) / 2)
-                            .attr("y", (sourceNode.y + targetNode.y) / 2 - 10)
-                            .attr("fill", "white")
-                            .attr("font-size", "14px")
-                            .attr("text-anchor", "middle")
-                            .text(`Weight: ${(weight || 0).toFixed(4)}`);
+                line.on("mouseover", function() {
+                    d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4);
+                    
+                    let weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
+                    
+                    const tooltip = svg.append("text")
+                        .attr("x", (sourceNode.x + targetNode.x) / 2)
+                        .attr("y", (sourceNode.y + targetNode.y) / 2 - 10)
+                        .attr("fill", "white")
+                        .attr("font-size", "14px")
+                        .attr("text-anchor", "middle")
+                        .text(`Weight: ${weightText}`);
 
-                        d3.select(this).on("mouseout", function () {
-                            d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2);
-                            tooltip.remove(); // Remove tooltip on mouseout
-                        });
+                    d3.select(this).on("mouseout", function() {
+                        d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2);
+                        tooltip.remove();
                     });
+                });
 
                 links.push({ source: sourceNode, target: targetNode, line, weight });
             });
         }
     });
 }
+
+console.log(`Total number of links created: ${links.length}`);
 // Drag and drop behavior for the nodes
 export function dragStarted(event, d) {
     d3.select(this).raise().attr("stroke", "black");
