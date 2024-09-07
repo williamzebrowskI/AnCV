@@ -213,23 +213,21 @@ document.addEventListener('DOMContentLoaded', function () {
     window.updateVisualization = updateVisualization;
     window.refreshMap = refreshMap;
 
-    // Assume socket is defined elsewhere
-    if (typeof socket !== 'undefined') {
-        socket.on('gradient_update', function(data) {
-            console.log("Received gradient update from socket:", data);
-            try {
-                const outputGradients = data.backward_data.output_grad;
-                if (!outputGradients) {
-                    throw new Error("Invalid gradient data structure");
-                }
-                window.updateVisualization(outputGradients);
-            } catch (error) {
-                console.error("Error processing gradient update:", error);
+    var socket = io.connect('http://127.0.0.1:5000');
+
+    socket.on('gradient_update', function(data) {
+        console.log("Received gradient update from socket:", data);
+        try {
+            const outputGradients = data.backward_data.output_grad;
+            if (!outputGradients || !Array.isArray(outputGradients)) {
+                throw new Error("Invalid gradient data structure");
             }
-        });
-    } else {
-        console.warn("Socket is not defined. Gradient updates will not be received.");
-    }
+            console.log("Calling updateVisualization with:", outputGradients);
+            window.updateVisualization(outputGradients);
+        } catch (error) {
+            console.error("Error processing gradient update:", error);
+        }
+    });
 
     console.log("Scene children:", scene.children);
 
