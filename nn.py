@@ -66,12 +66,13 @@ class SimpleNeuralNetwork(nn.Module):
                 forward_data = {
                     "input": inputs.tolist(),
                     "hidden_activation": [{
-                        "pre_activation": z.tolist(),
-                        "post_activation": a.tolist()
+                        "pre_activation": z.mean().tolist(),  # Average the batch values
+                        "post_activation": a.mean().tolist()  # Average the batch values
                     } for z, a in hidden_activations],
                     "output": outputs.tolist(),
                     "forward_time": forward_time
                 }
+
                 backward_data = {
                     "hidden_grad": [layer.weight.grad.abs().tolist() for layer in self.hidden_layers],
                     "output_grad": self.output.weight.grad.abs().tolist(),
