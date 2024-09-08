@@ -75,47 +75,44 @@ export function drawNeuralNetwork(layers, weights, data) {
                 .on("mouseenter", function (event) {
                     isOverNode = true;
                     clearTimeout(hidePopupTimeout);
-                    d3.select(this).style("stroke", "rgba(255, 99, 132, 1)").style("stroke-width", "4px");
+                    
+                    // Pause node animation during hover
+                    d3.selectAll(".node-animation").style("animation-play-state", "paused");
                 
-                    // Disable pointer events on the lines when the popup is shown
-                    d3.selectAll("line").style("pointer-events", "none");
-                
-                    // Ensure hover works even if data is missing
+                    // Style the hovered node differently
+                    d3.select(this).style("stroke", "rgba(0, 255, 255, 1)").style("stroke-width", "4px");
+                    
                     let preActivation = 'N/A';
                     let postActivation = 'N/A';
-                
-                    // Handle hidden layers
+                    
                     if (layerIndex > 0 && layerIndex < layers.length - 1) {
-                        // Handle hidden layers' pre and post activation
                         if (forwardData && forwardData.hidden_activation && forwardData.hidden_activation.length > layerIndex - 1) {
-                            preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation[i] || 'N/A';
-                            postActivation = forwardData.hidden_activation[layerIndex - 1].post_activation[i] || 'N/A';
+                            preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation || 'N/A';
+                            postActivation = forwardData.hidden_activation[layerIndex - 1].post_activation || 'N/A';
                         }
                     }
-                
-                    // Handle the output layer
-                    if (layerIndex === layers.length - 1) {
-                        if (forwardData && forwardData.output && forwardData.output.length > i) {
-                            postActivation = forwardData.output[i] || 'N/A'; // No pre-activation for output layer
-                        }
-                    }
-                
+                    
                     const nodeData = {
                         layerType: layerType,
                         nodeIndex: i,
                         weight: 'N/A',
                         bias: 'N/A',
-                        preActivation: Array.isArray(preActivation) ? d3.mean(preActivation) : preActivation,  // Handle array if necessary
-                        activation: Array.isArray(postActivation) ? d3.mean(postActivation) : postActivation,   // Handle array if necessary
+                        preActivation: preActivation,
+                        activation: postActivation,
                         gradient: 'N/A',
                         backpropHistory: []
                     };
+                    
                 
                     updateNeuronPopup(popup, event.pageX, event.pageY, nodeData);
                     popup.style("display", "block");
                 })
                 .on("mouseleave", function () {
                     isOverNode = false;
+                
+                    // Resume animation after leaving the node
+                    d3.selectAll(".node-animation").style("animation-play-state", "running");
+                
                     d3.select(this).style("stroke", "white").style("stroke-width", "2px");
                     hidePopupTimeout = setTimeout(() => {
                         if (!isOverPopup) {
