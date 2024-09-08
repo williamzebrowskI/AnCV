@@ -103,7 +103,7 @@ export function drawNeuralNetwork(layers, weights, data) {
                         backpropHistory: []
                     };
                     
-                
+                    popup.raise()
                     updateNeuronPopup(popup, event.pageX, event.pageY, nodeData);
                     popup.style("display", "block");
                 })
