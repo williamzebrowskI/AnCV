@@ -92,10 +92,10 @@ export function updateNeuronPopup(popup, x, y, data) {
         .text(`Bias: ${typeof data.bias === 'number' ? data.bias.toFixed(4) : data.bias}`);
 
     popup.select(".popup-pre-activation")
-        .text(`Pre-Activation: ${typeof data.preActivation === 'number' ? data.preActivation.toFixed(4) : data.preActivation}`);
+        .text(`Weighted Sum: ${typeof data.preActivation === 'number' ? data.preActivation.toFixed(4) : data.preActivation}`);
 
     popup.select(".popup-activation")
-        .text(`Post-Activation: ${typeof data.activation === 'number' ? data.activation.toFixed(4) : data.activation}`);
+        .text(`Activation: ${typeof data.activation === 'number' ? data.activation.toFixed(4) : data.activation}`);
 
     popup.select(".popup-gradient")
         .text(`Gradient: ${typeof data.gradient === 'number' ? data.gradient.toFixed(4) : data.gradient}`);
