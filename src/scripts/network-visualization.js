@@ -232,6 +232,9 @@ export function dragEnded(event, d) {
     if (!isOverPopup) {
         hideNeuronPopup(popup);
     }
+    
+    // Re-enable pointer events on the lines
+    d3.selectAll("line").style("pointer-events", "auto");
 }
 
 export function updateConnections(draggedNode) {
