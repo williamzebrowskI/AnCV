@@ -65,8 +65,6 @@ def handle_start_training(data):
     noise_level = data['noiseLevel']
     batch_size = data.get('batchSize', 1)
 
-    print(hidden_sizes)
-
     training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size)
     nn = SimpleNeuralNetwork(input_size, hidden_sizes, output_size)
 
@@ -75,7 +73,7 @@ def handle_start_training(data):
             'input_size': input_size,
             'epoch': epoch,
             'forward_data': convert_to_serializable(forward_data),
-            'loss': float(loss),  # Ensure loss is a Python float
+            'loss': float(loss),
             'all_activations': convert_to_serializable(all_activations),
             'backward_data': convert_to_serializable(backward_data),
             'weights_biases_data': convert_to_serializable(weights_biases_data),
