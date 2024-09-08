@@ -17,13 +17,18 @@ export function drawNeuralNetwork(layers, weights, data) {
     console.log("Received weights:", weights);
     d3.select("#visualization").html("");
 
-    const forwardData = data ? data.forward_data : null; 
+    const svg = d3.select("#visualization").append("svg")
+        .attr("width", window.innerWidth)
+        .attr("height", window.innerHeight);
+
+    // Create groups for lights and popup
+    const lightsGroup = svg.append("g").attr("class", "lights-group");
+    const popupGroup = svg.append("g").attr("class", "popup-group");
+
+    const forwardData = data ? data.forward_data : null;
 
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const svg = d3.select("#visualization").append("svg")
-        .attr("width", width)
-        .attr("height", height);
 
     const layerSpacing = width / (layers.length + 1);
     const nodeRadius = 20;
@@ -31,8 +36,8 @@ export function drawNeuralNetwork(layers, weights, data) {
     nodes = [];
     links = [];
 
-    // Create the popup
-    popup = createNeuronPopup(svg);
+    // Create the popup inside the popup group
+    popup = createNeuronPopup(popupGroup);
 
     popup.on("mouseenter", () => {
         isOverPopup = true;
@@ -103,7 +108,7 @@ export function drawNeuralNetwork(layers, weights, data) {
                         backpropHistory: []
                     };
                     
-                    popup.raise()
+                    popupGroup.raise();  // Raise the popup group above the lights
                     updateNeuronPopup(popup, event.pageX, event.pageY, nodeData);
                     popup.style("display", "block");
                 })
@@ -141,7 +146,7 @@ export function drawNeuralNetwork(layers, weights, data) {
                     weight = weights.hidden_weights[sourceNode.layerIndex][j] ? weights.hidden_weights[sourceNode.layerIndex][j][sourceNode.i] : null;
                 }
 
-                const line = svg.append("line")
+                const line = lightsGroup.append("line")  // Use lightsGroup for line creation
                     .attr("x1", sourceNode.x)
                     .attr("y1", sourceNode.y)
                     .attr("x2", targetNode.x)
@@ -319,7 +324,10 @@ export function animateBackwardPass(backwardData, svg, duration) {
 }
 
 // Function to animate light through the layer without using getPointAtLength
+// Updated animateLightThroughLayer to use lightsGroup for light circles
 export function animateLightThroughLayer(node, nextLayerData, duration, svg, direction) {
+    const lightsGroup = svg.select(".lights-group"); // Use the lights group for all lights
+
     // Ensure the node is valid
     if (!node || typeof node.layerIndex === 'undefined') {
         console.error("Invalid node or missing layerIndex", node);
@@ -350,7 +358,7 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
         // Create or update the line
         let path = svg.select(`.line-${node.layerIndex}-${i}-${targetNode.i}`);
         if (path.empty()) {
-            path = svg.append("line")
+            path = lightsGroup.append("line")  // Use lightsGroup for the line
                 .attr("x1", node.x)
                 .attr("y1", node.y)
                 .attr("x2", targetNode.x)
@@ -359,7 +367,7 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
                 .attr("stroke-width", 6);
         }
 
-        const light = svg.append("circle")
+        const light = lightsGroup.append("circle")  // Append the light to lightsGroup
             .attr("r", 8)
             .attr("fill", "rgba(255, 255, 255, 0.9)")  // Bright white color for the light
             .style("stroke", "rgba(200, 200, 200, 0.7)")  // Light gray stroke for a soft glow
