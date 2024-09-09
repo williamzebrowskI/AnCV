@@ -1,3 +1,7 @@
+let isOverNode = false;
+let hidePopupTimeout;
+let isOverPopup = false;
+
 export function createNeuronPopup(svg) {
     const popup = svg.append("g")
         .attr("class", "neuron-popup")
@@ -68,6 +72,72 @@ export function createNeuronPopup(svg) {
     `);
 
     return d3.select(popup.node());
+}
+
+export function handleNeuronMouseover(popup, event, layerType, nodeIndex, nodeData) {
+    // Indicates that the mouse is currently over a neuron
+    isOverNode = true;
+    clearTimeout(hidePopupTimeout); // Cancel any pending hide popup action
+
+    // Style the hovered node (you can add more styles as needed)
+    d3.select(event.target).style("stroke", "rgba(0, 255, 255, 1)").style("stroke-width", "4px");
+
+    // Call the updateNeuronPopup function to update the popup's content and position
+    updateNeuronPopup(popup, event.pageX, event.pageY, {
+        layerType: layerType,
+        nodeIndex: nodeIndex,
+        ...nodeData
+    });
+
+    // Ensure the popup is visible
+    popup.style("display", "block");
+}
+
+export function handleNeuronMouseleave(popup, event) {
+    // Indicates that the mouse has left the neuron
+    isOverNode = false;
+
+    // Restore the original style of the neuron
+    d3.select(event.target).style("stroke", "white").style("stroke-width", "2px");
+
+    // Set a timeout to hide the popup, giving the user time to hover over it if needed
+    hidePopupTimeout = setTimeout(() => {
+        if (!isOverPopup) {
+            hideNeuronPopup(popup);
+        }
+    }, 100);
+}
+
+export function getNodeData(layerIndex, i, forwardData, data, layers) {
+    const nodeData = {
+        weight: 'N/A',
+        bias: 'N/A',
+        preActivation: 'N/A',
+        activation: 'N/A',
+        gradient: 'N/A',
+        backpropHistory: []
+    };
+
+    // Input Layer: Get input value dynamically
+    if (layerIndex === 0) {
+        if (forwardData && forwardData.input && forwardData.input.length > 0) {
+            const singleSample = data.epoch % forwardData.input.length;  // Cycle through samples dynamically
+            nodeData.inputValue = forwardData.input[singleSample][i];  // Get the value for this neuron
+        }
+    }
+    // Hidden Layers
+    else if (layerIndex > 0 && layerIndex < layers.length - 1) {
+        if (forwardData && forwardData.hidden_activation && forwardData.hidden_activation.length > layerIndex - 1) {
+            nodeData.preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation || 'N/A';
+            nodeData.activation = forwardData.hidden_activation[layerIndex - 1].post_activation || 'N/A';
+        }
+    }
+    // Output Layer
+    else if (layerIndex === layers.length - 1) {
+        // Output layer logic can go here
+    }
+
+    return nodeData;
 }
 
 export function updateNeuronPopup(popup, x, y, data) {
