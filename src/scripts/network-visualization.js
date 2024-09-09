@@ -41,10 +41,10 @@ export function drawNeuralNetwork(layers, weights, data) {
 
     popup.on("mouseenter", () => {
         isOverPopup = true;
-        clearTimeout(hidePopupTimeout);
+        clearTimeout(hidePopupTimeout);  // Cancel hide timeout when entering popup
     }).on("mouseleave", () => {
         isOverPopup = false;
-        if (!isOverNode) {
+        if (!isOverNode) {  // Only hide if the cursor is not over the node either
             hideNeuronPopup(popup);
         }
     });
@@ -65,26 +65,47 @@ export function drawNeuralNetwork(layers, weights, data) {
         for (let i = 0; i < layerSize; i++) {
             const y = ySpacing * (i + 1);
 
+            let strokeColor;
+            if (layerIndex === 0) {
+                // Input layer
+                strokeColor = "rgba(57, 255, 20, 1)";  // Neon Green for outer ring
+            } else if (layerIndex === layers.length - 1) {
+                // Output layer
+                strokeColor = "rgba(255, 7, 58, 1)";  // Neon Red for outer ring
+            } else {
+                // Hidden layers
+                strokeColor = "rgba(255, 255, 51, 1)";  // Neon Yellow for outer ring
+            }
+            
+            // Set the color for each node with neon stroke (outer ring) and neutral fill
             const node = svg.append("circle")
                 .attr("cx", x)
                 .attr("cy", y)
                 .attr("r", nodeRadius)
-                .style("fill", "rgba(255, 255, 255, 0.1)")
-                .style("stroke", "white")
-                .style("stroke-width", "2")
+                .style("fill", "rgba(255, 255, 255, 0.1)")  // Neutral fill color
+                .style("stroke", "rgba(0, 255, 255, 1)")  // Neon blue stroke
+                .style("stroke-width", "4px")  // Thicker stroke for neon effect
+                .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))")  // Neon glow effect
                 .call(d3.drag()
                     .on("start", dragStarted)
                     .on("drag", dragged)
                     .on("end", dragEnded)
                 )
                 .on("mouseenter", function (event) {
+                    isOverNode = true;  // Track when the cursor is over the node
+                    clearTimeout(hidePopupTimeout);  // Prevent hiding the popup when hovering over the node
                     const nodeData = getNodeData(layerIndex, i, forwardData, data, layers);
                     handleNeuronMouseover(popupGroup, popup, event, layerType, i, nodeData);
                 })
                 .on("mouseleave", function (event) {
+                    isOverNode = false;  // Reset the node hover flag
+                    if (!isOverPopup) {  // Only hide the popup if not over the popup
+                        hidePopupTimeout = setTimeout(() => {
+                            hideNeuronPopup(popup);
+                        }, 100);  // Delay hiding to allow transition to popup
+                    }
                     handleNeuronMouseleave(popup, event);  // Handles popup hide and neuron styling reset
                 });
-
             nodes.push({ layerIndex, i, x, y, node: node.node(), layerType });
         }
     });
