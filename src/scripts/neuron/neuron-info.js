@@ -74,25 +74,30 @@ export function createNeuronPopup(svg) {
     return d3.select(popup.node());
 }
 
-export function handleNeuronMouseover(popup, event, layerType, nodeIndex, nodeData) {
-    // Indicates that the mouse is currently over a neuron
+export function handleNeuronMouseover(popupGroup, popup, event, layerType, nodeIndex, nodeData) {
     isOverNode = true;
-    clearTimeout(hidePopupTimeout); // Cancel any pending hide popup action
+    clearTimeout(hidePopupTimeout);  // Cancel any pending hide popup action
 
-    // Style the hovered node (you can add more styles as needed)
+    // Style the hovered node
     d3.select(event.target).style("stroke", "rgba(0, 255, 255, 1)").style("stroke-width", "4px");
 
-    // Call the updateNeuronPopup function to update the popup's content and position
-    updateNeuronPopup(popup, event.pageX, event.pageY, {
+    // Ensure mouse position values are valid (fallback to clientX/clientY if pageX/pageY is NaN)
+    const x = isNaN(event.pageX) ? event.clientX : event.pageX;
+    const y = isNaN(event.pageY) ? event.clientY : event.pageY;
+
+    // Update the popup's content and position
+    updateNeuronPopup(popup, x, y, {
         layerType: layerType,
         nodeIndex: nodeIndex,
         ...nodeData
     });
 
-    // Ensure the popup is visible
+    // Raise the entire popup group to ensure it's on top of everything
+    popupGroup.raise();
+
+    // Make sure the popup is visible
     popup.style("display", "block");
 }
-
 export function handleNeuronMouseleave(popup, event) {
     // Indicates that the mouse has left the neuron
     isOverNode = false;
