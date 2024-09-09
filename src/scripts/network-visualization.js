@@ -80,35 +80,41 @@ export function drawNeuralNetwork(layers, weights, data) {
                 .on("mouseenter", function (event) {
                     isOverNode = true;
                     clearTimeout(hidePopupTimeout);
-                    
-                    // Pause node animation during hover
-                    d3.selectAll(".node-animation").style("animation-play-state", "paused");
-                
-                    // Style the hovered node differently
+
+                    // Style for the hovered node
                     d3.select(this).style("stroke", "rgba(0, 255, 255, 1)").style("stroke-width", "4px");
-                    
-                    let preActivation = 'N/A';
-                    let postActivation = 'N/A';
-                    
-                    if (layerIndex > 0 && layerIndex < layers.length - 1) {
-                        if (forwardData && forwardData.hidden_activation && forwardData.hidden_activation.length > layerIndex - 1) {
-                            preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation || 'N/A';
-                            postActivation = forwardData.hidden_activation[layerIndex - 1].post_activation || 'N/A';
-                        }
-                    }
-                    
-                    const nodeData = {
+
+                    let nodeData = {
                         layerType: layerType,
                         nodeIndex: i,
                         weight: 'N/A',
                         bias: 'N/A',
-                        preActivation: preActivation,
-                        activation: postActivation,
+                        preActivation: 'N/A',
+                        activation: 'N/A',
                         gradient: 'N/A',
                         backpropHistory: []
                     };
-                    
-                    popupGroup.raise();  // Raise the popup group above the lights
+
+                    // Input Layer: Get input value dynamically
+                    if (layerIndex === 0) {
+                        if (forwardData && forwardData.input && forwardData.input.length > 0) {
+                            const singleSample = data.epoch % forwardData.input.length;  // Cycle through samples dynamically
+                            nodeData.inputValue = forwardData.input[singleSample][i];  // Get the value for this neuron
+                        }
+                    }
+                    // Hidden Layers
+                    else if (layerIndex > 0 && layerIndex < layers.length - 1) {
+                        if (forwardData && forwardData.hidden_activation && forwardData.hidden_activation.length > layerIndex - 1) {
+                            nodeData.preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation || 'N/A';
+                            nodeData.activation = forwardData.hidden_activation[layerIndex - 1].post_activation || 'N/A';
+                        }
+                    } 
+                    // Output Layer
+                    else if (layerIndex === layers.length - 1) {
+                        // You can handle the output layer here
+                    }
+
+                    popupGroup.raise();  // Raise the popup above other elements
                     updateNeuronPopup(popup, event.pageX, event.pageY, nodeData);
                     popup.style("display", "block");
                 })
