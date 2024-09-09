@@ -79,7 +79,7 @@ export function drawNeuralNetwork(layers, weights, data) {
                 )
                 .on("mouseenter", function (event) {
                     const nodeData = getNodeData(layerIndex, i, forwardData, data, layers);
-                    handleNeuronMouseover(popup, event, layerType, i, nodeData);  // Handles popup display and styling
+                    handleNeuronMouseover(popupGroup, popup, event, layerType, i, nodeData);
                 })
                 .on("mouseleave", function (event) {
                     handleNeuronMouseleave(popup, event);  // Handles popup hide and neuron styling reset
