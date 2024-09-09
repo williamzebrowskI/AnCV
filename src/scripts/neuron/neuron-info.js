@@ -6,7 +6,7 @@ export function createNeuronPopup(svg) {
     const popup = svg.append("g")
         .attr("class", "neuron-popup")
         .style("display", "none")
-        .style("pointer-events", "all");
+        .style("pointer-events", "all"); 
 
     // Futuristic background with a gradient and glowing border
     popup.append("rect")
@@ -78,39 +78,33 @@ export function handleNeuronMouseover(popupGroup, popup, event, layerType, nodeI
     isOverNode = true;
     clearTimeout(hidePopupTimeout);  // Cancel any pending hide popup action
 
-    // Style the hovered node
-    d3.select(event.target).style("stroke", "rgba(0, 255, 255, 1)").style("stroke-width", "4px");
+    // Strengthen the neon blue glow on hover
+    d3.select(event.target)
+        .style("stroke", "rgba(0, 255, 255, 1)")  // Same neon blue stroke
+        .style("stroke-width", "6px")  // Increase stroke width on hover
+        .style("filter", "drop-shadow(0 0 20px rgba(0, 255, 255, 1))");  // Brighter neon glow
 
-    // Ensure mouse position values are valid (fallback to clientX/clientY if pageX/pageY is NaN)
     const x = isNaN(event.pageX) ? event.clientX : event.pageX;
     const y = isNaN(event.pageY) ? event.clientY : event.pageY;
 
-    // Update the popup's content and position
     updateNeuronPopup(popup, x, y, {
         layerType: layerType,
         nodeIndex: nodeIndex,
         ...nodeData
     });
 
-    // Raise the entire popup group to ensure it's on top of everything
-    popupGroup.raise();
-
-    // Make sure the popup is visible
+    popupGroup.raise();  // Bring popup group to front
     popup.style("display", "block");
 }
+
 export function handleNeuronMouseleave(popup, event) {
-    // Indicates that the mouse has left the neuron
     isOverNode = false;
 
-    // Restore the original style of the neuron
-    d3.select(event.target).style("stroke", "white").style("stroke-width", "2px");
-
-    // Set a timeout to hide the popup, giving the user time to hover over it if needed
-    hidePopupTimeout = setTimeout(() => {
-        if (!isOverPopup) {
-            hideNeuronPopup(popup);
-        }
-    }, 100);
+    // Reduce the glow effect when leaving the node
+    d3.select(event.target)
+        .style("stroke", "rgba(0, 255, 255, 1)")  // Keep neon blue stroke
+        .style("stroke-width", "4px")  // Revert to original width
+        .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");  // Reduce glow intensity
 }
 
 export function getNodeData(layerIndex, i, forwardData, data, layers) {
@@ -215,6 +209,7 @@ export function updateNeuronPopup(popup, x, y, data) {
         popup.select(".sparkline").attr("d", ""); // Clear sparkline if no data
     }
 }
+
 
 export function hideNeuronPopup(popup) {
     popup.style("display", "none");
