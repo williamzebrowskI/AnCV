@@ -80,21 +80,52 @@ export function updateNeuronPopup(popup, x, y, data) {
     popup.select(".popup-title")
         .text(`${data.layerType} Node ${data.nodeIndex}`);
 
-    popup.select(".popup-weight")
-        .text(`Weight: ${typeof data.weight === 'number' ? data.weight.toFixed(4) : Array.isArray(data.weight) ? d3.mean(data.weight).toFixed(4) : data.weight}`);
+    // Handle input layer specifically, showing input value
+    if (data.layerType === "Input") {
+        const inputValue = Array.isArray(data.inputValue) 
+            ? data.inputValue.join(', ') 
+            : (typeof data.inputValue === 'number' ? data.inputValue.toFixed(4) : 'N/A');
+        popup.select(".popup-weight").text(`Input Value: ${inputValue}`);
+        popup.select(".popup-bias").text("");  // Clear bias field for input layer since it's not relevant
+    } else {
+        // Handle weight and bias for hidden and output layers
+        const weight = typeof data.weight === 'number' 
+            ? data.weight.toFixed(4) 
+            : Array.isArray(data.weight) 
+            ? d3.mean(data.weight).toFixed(4) 
+            : 'N/A';
+        const bias = typeof data.bias === 'number' 
+            ? data.bias.toFixed(4) 
+            : Array.isArray(data.bias) 
+            ? d3.mean(data.bias).toFixed(4) 
+            : 'N/A';
 
-    popup.select(".popup-bias")
-        .text(`Bias: ${typeof data.bias === 'number' ? data.bias.toFixed(4) : Array.isArray(data.bias) ? d3.mean(data.bias).toFixed(4) : data.bias}`);
+        popup.select(".popup-weight").text(`Weight: ${weight}`);
+        popup.select(".popup-bias").text(`Bias: ${bias}`);
+    }
 
+    // Pre-activation value
+    const preActivation = typeof data.preActivation === 'number' 
+        ? data.preActivation.toFixed(4) 
+        : 'N/A';
     popup.select(".popup-pre-activation")
-        .text(`Weighted Sum: ${typeof data.preActivation === 'number' ? data.preActivation.toFixed(4) : 'N/A'}`);
-    
-    popup.select(".popup-activation")
-        .text(`Activation: ${typeof data.activation === 'number' ? data.activation.toFixed(4) : 'N/A'}`);
+        .text(`Weighted Sum: ${preActivation}`);
 
-    // Handle gradient similarly
+    // Post-activation value
+    const activation = typeof data.activation === 'number' 
+        ? data.activation.toFixed(4) 
+        : 'N/A';
+    popup.select(".popup-activation")
+        .text(`Activation: ${activation}`);
+
+    // Handle gradient
+    const gradient = typeof data.gradient === 'number' 
+        ? data.gradient.toFixed(4) 
+        : Array.isArray(data.gradient) 
+        ? d3.mean(data.gradient).toFixed(4) 
+        : 'N/A';
     popup.select(".popup-gradient")
-        .text(`Gradient: ${typeof data.gradient === 'number' ? data.gradient.toFixed(4) : Array.isArray(data.gradient) ? d3.mean(data.gradient).toFixed(4) : 'N/A'}`);
+        .text(`Gradient: ${gradient}`);
 
     // Sparkline for backpropagation visualization
     if (data.backpropHistory && data.backpropHistory.length > 0) {
