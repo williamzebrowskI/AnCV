@@ -78,6 +78,8 @@ export function handleNeuronMouseover(popupGroup, popup, event, layerType, nodeI
     isOverNode = true;
     clearTimeout(hidePopupTimeout);  // Cancel any pending hide popup action
 
+    console.log('mouseover nodeData', nodeData )
+
     // Strengthen the neon blue glow on hover
     d3.select(event.target)
         .style("stroke", "rgba(0, 255, 255, 1)")  // Same neon blue stroke
@@ -117,29 +119,63 @@ export function getNodeData(layerIndex, i, forwardData, data, layers) {
         backpropHistory: []
     };
 
-    // Input Layer: Get input value dynamically
+    console.log(`\n---- Retrieving data for Node ----`);
+    console.log('Layer Index:', layerIndex);
+    console.log('Node Index:', i);
+    console.log('Forward Data:', forwardData);
+
     if (layerIndex === 0) {
+        // Input layer logic
         if (forwardData && forwardData.input && forwardData.input.length > 0) {
-            const singleSample = data.epoch % forwardData.input.length;  // Cycle through samples dynamically
-            nodeData.inputValue = forwardData.input[singleSample][i];  // Get the value for this neuron
+            const singleSample = data.epoch % forwardData.input.length;
+            nodeData.inputValue = forwardData.input[singleSample][i];
+            console.log('Input Value:', nodeData.inputValue);
         }
-    }
-    // Hidden Layers
-    else if (layerIndex > 0 && layerIndex < layers.length - 1) {
+    } else if (layerIndex > 0 && layerIndex < layers.length - 1) {
+        // Hidden layer logic
+        console.log('Checking Hidden Layer Activations...');
         if (forwardData && forwardData.hidden_activation && forwardData.hidden_activation.length > layerIndex - 1) {
+            console.log('Hidden Activation:', forwardData.hidden_activation[layerIndex - 1]);
+
+            // Pre-activation and activation
             nodeData.preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation || 'N/A';
             nodeData.activation = forwardData.hidden_activation[layerIndex - 1].post_activation || 'N/A';
+            console.log('Pre-activation:', nodeData.preActivation);
+            console.log('Post-activation:', nodeData.activation);
+
+            // Weight and bias
+            nodeData.weight = data.weights_biases_data.hidden_weights[layerIndex - 1][i] || 'N/A';
+            nodeData.bias = data.weights_biases_data.hidden_biases[layerIndex - 1][i] || 'N/A';
+            console.log('Weight:', nodeData.weight);
+            console.log('Bias:', nodeData.bias);
+        } else {
+            console.log('Hidden Activation data missing or incomplete.');
+        }
+    } else if (layerIndex === layers.length - 1) {
+        // Output layer logic
+        console.log('Checking Output Layer Activations...');
+        if (forwardData && forwardData.output_activation) {
+            nodeData.preActivation = forwardData.output_activation.pre_activation || 'N/A';
+            nodeData.activation = forwardData.output_activation.post_activation || 'N/A';
+            console.log('Pre-activation:', nodeData.preActivation);
+            console.log('Post-activation:', nodeData.activation);
+
+            nodeData.weight = data.weights_biases_data.output_weights[i] || 'N/A';
+            nodeData.bias = data.weights_biases_data.output_biases[i] || 'N/A';
+            console.log('Weight:', nodeData.weight);
+            console.log('Bias:', nodeData.bias);
+        } else {
+            console.log('Output Activation data missing.');
         }
     }
-    // Output Layer
-    else if (layerIndex === layers.length - 1) {
-        // Output layer logic can go here
-    }
 
+    console.log('Final Node Data:', nodeData);
     return nodeData;
 }
 
 export function updateNeuronPopup(popup, x, y, data) {
+    console.log('Popup data:', data); // Add this to check the data being passed
+
     const xOffset = -60;
     const yOffset = -50;
 
@@ -149,47 +185,50 @@ export function updateNeuronPopup(popup, x, y, data) {
     popup.select(".popup-title")
         .text(`${data.layerType} Node ${data.nodeIndex}`);
 
-    // Handle input layer specifically, showing input value
     if (data.layerType === "Input") {
-        const inputValue = Array.isArray(data.inputValue) 
-            ? data.inputValue.join(', ') 
-            : (typeof data.inputValue === 'number' ? data.inputValue.toFixed(4) : 'N/A');
+        // Parse the inputValue and handle number or string
+        let inputValue = parseFloat(data.inputValue);  // Convert to a number
+        
+        if (!isNaN(inputValue)) {
+            inputValue = inputValue.toFixed(4);  // If it's a valid number, format it
+        } else {
+            inputValue = (typeof data.inputValue === 'string') ? data.inputValue : 'N/A';  // If it's a string, display it as-is
+        }
+        
+        // Update popup text for input value
         popup.select(".popup-weight").text(`Input Value: ${inputValue}`);
         popup.select(".popup-bias").text("");  // Clear bias field for input layer since it's not relevant
     } else {
         // Handle weight and bias for hidden and output layers
-        const weight = typeof data.weight === 'number' 
-            ? data.weight.toFixed(4) 
-            : Array.isArray(data.weight) 
-            ? d3.mean(data.weight).toFixed(4) 
-            : 'N/A';
-        const bias = typeof data.bias === 'number' 
-            ? data.bias.toFixed(4) 
-            : Array.isArray(data.bias) 
-            ? d3.mean(data.bias).toFixed(4) 
-            : 'N/A';
-
+        const weight = (typeof data.weight === 'number')
+            ? data.weight.toFixed(4)
+            : Array.isArray(data.weight) ? d3.mean(data.weight).toFixed(4) : 'N/A';
+    
+        const bias = (typeof data.bias === 'number')
+            ? data.bias.toFixed(4)
+            : Array.isArray(data.bias) ? d3.mean(data.bias).toFixed(4) : 'N/A';
+    
         popup.select(".popup-weight").text(`Weight: ${weight}`);
         popup.select(".popup-bias").text(`Bias: ${bias}`);
     }
 
     // Pre-activation value
-    const preActivation = typeof data.preActivation === 'number' 
-        ? data.preActivation.toFixed(4) 
+    const preActivation = (typeof data.preActivation === 'number' || typeof data.preActivation === 'string') 
+        ? (typeof data.preActivation === 'number' ? data.preActivation.toFixed(4) : data.preActivation) 
         : 'N/A';
     popup.select(".popup-pre-activation")
         .text(`Weighted Sum: ${preActivation}`);
 
     // Post-activation value
-    const activation = typeof data.activation === 'number' 
-        ? data.activation.toFixed(4) 
+    const activation = (typeof data.activation === 'number' || typeof data.activation === 'string') 
+        ? (typeof data.activation === 'number' ? data.activation.toFixed(4) : data.activation) 
         : 'N/A';
     popup.select(".popup-activation")
         .text(`Activation: ${activation}`);
 
     // Handle gradient
-    const gradient = typeof data.gradient === 'number' 
-        ? data.gradient.toFixed(4) 
+    const gradient = (typeof data.gradient === 'number' || typeof data.gradient === 'string')
+        ? (typeof data.gradient === 'number' ? data.gradient.toFixed(4) : data.gradient)
         : Array.isArray(data.gradient) 
         ? d3.mean(data.gradient).toFixed(4) 
         : 'N/A';
