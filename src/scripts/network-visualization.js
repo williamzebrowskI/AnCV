@@ -126,32 +126,40 @@ export function drawNeuralNetwork(layers, weights, data) {
                 }
 
                 const line = lightsGroup.append("line")  // Use lightsGroup for line creation
-                    .attr("x1", sourceNode.x)
-                    .attr("y1", sourceNode.y)
-                    .attr("x2", targetNode.x)
-                    .attr("y2", targetNode.y)
-                    .attr("stroke", "#ccc")
-                    .attr("stroke-width", 2)
-                    .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
-
-                line.on("mouseenter", function(event) {
-                    d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4);
-                    
-                    let weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
-                    
-                    const tooltip = svg.append("text")
-                        .attr("x", (sourceNode.x + targetNode.x) / 2)
-                        .attr("y", (sourceNode.y + targetNode.y) / 2 - 10)
-                        .attr("fill", "white")
-                        .attr("font-size", "14px")
-                        .attr("text-anchor", "middle")
-                        .text(`Weight: ${weightText}`);
-
-                    d3.select(this).on("mouseleave", function() {
-                        d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2);
-                        tooltip.remove();
-                    });
+                .attr("x1", sourceNode.x)
+                .attr("y1", sourceNode.y)
+                .attr("x2", targetNode.x)
+                .attr("y2", targetNode.y)
+                .attr("stroke", "rgba(255, 0, 85, 1)")  // Neon red color
+                .attr("stroke-width", 2)
+                .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
+            
+            // On mouseenter, add a glow effect
+            line.on("mouseenter", function(event) {
+                d3.select(this)
+                    .attr("stroke", "rgba(255, 0, 85, 1)")  // Keep neon red
+                    .attr("stroke-width", 4)  // Make the line thicker
+                    .style("filter", "drop-shadow(0 0 10px rgba(255, 0, 85, 1))");  // Add the glow effect
+            
+                let weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
+            
+                const tooltip = svg.append("text")
+                    .attr("x", (sourceNode.x + targetNode.x) / 2)
+                    .attr("y", (sourceNode.y + targetNode.y) / 2 - 10)
+                    .attr("fill", "white")
+                    .attr("font-size", "14px")
+                    .attr("text-anchor", "middle")
+                    .text(`Weight: ${weightText}`);
+            
+                d3.select(this).on("mouseleave", function() {
+                    d3.select(this)
+                        .attr("stroke", "rgba(255, 0, 85, 1)")  // Keep neon red
+                        .attr("stroke-width", 2)  // Reset stroke width
+                        .style("filter", null);  // Remove the glow effect
+            
+                    tooltip.remove();
                 });
+            });
 
                 links.push({ source: sourceNode, target: targetNode, line, weight });
             });
