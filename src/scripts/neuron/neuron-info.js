@@ -119,11 +119,6 @@ export function getNodeData(layerIndex, i, forwardData, data, layers) {
         backpropHistory: []
     };
 
-    console.log(`\n---- Retrieving data for Node ----`);
-    console.log('Layer Index:', layerIndex);
-    console.log('Node Index:', i);
-    console.log('Forward Data:', forwardData);
-
     if (layerIndex === 0) {
         // Input layer logic
         if (forwardData && forwardData.input && forwardData.input.length > 0) {
