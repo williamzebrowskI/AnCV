@@ -21,11 +21,13 @@ class SimpleNeuralNetwork(nn.Module):
     def forward(self, x):
         hidden_activations = []
         for hidden_layer in self.hidden_layers:
-            x = F.gelu(hidden_layer(x))
-            hidden_activations.append(x)
+            z = hidden_layer(x)  # Pre-activation
+            a = F.gelu(z)  # Post-activation (applying GELU or your chosen activation function)
+            hidden_activations.append((z, a))
+            x = a  # Pass the post-activation to the next layer
         
         output = self.output(x)  # Final output layer
-        return output, hidden_activations
+        return output, hidden_activations  #
 
     def train_network(self, data, epochs, learning_rate, callback):
         criterion = nn.MSELoss()
@@ -47,7 +49,7 @@ class SimpleNeuralNetwork(nn.Module):
                 forward_time = time.time() - start_time
 
                 # Store all activations in each layer
-                all_activations.append([activation.detach().cpu().numpy() for activation in hidden_activations])
+                all_activations.append([(z.detach().cpu().numpy(), x.detach().cpu().numpy()) for z, x in hidden_activations])
 
                 # Compute the loss
                 loss = criterion(outputs, targets)
@@ -63,10 +65,14 @@ class SimpleNeuralNetwork(nn.Module):
                 # Prepare forward and backward pass data for each hidden layer
                 forward_data = {
                     "input": inputs.tolist(),
-                    "hidden_activation": [activation.tolist() for activation in hidden_activations],
+                    "hidden_activation": [{
+                        "pre_activation": z.mean().tolist(),  # Average the batch values
+                        "post_activation": a.mean().tolist()  # Average the batch values
+                    } for z, a in hidden_activations],
                     "output": outputs.tolist(),
                     "forward_time": forward_time
                 }
+
                 backward_data = {
                     "hidden_grad": [layer.weight.grad.abs().tolist() for layer in self.hidden_layers],
                     "output_grad": self.output.weight.grad.abs().tolist(),

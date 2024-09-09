@@ -4,6 +4,7 @@ from flask_socketio import SocketIO, emit
 from nn import SimpleNeuralNetwork, generate_dummy_data
 from threading import Thread
 import ctypes
+import torch
 import numpy as np
 
 app = Flask(__name__)
@@ -38,6 +39,20 @@ def reset_network_state():
 def reset_network():
     return jsonify(reset_network_state())
 
+def convert_to_serializable(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, torch.Tensor):
+        return obj.detach().cpu().numpy().tolist()
+    elif isinstance(obj, (list, tuple)):
+        return [convert_to_serializable(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: convert_to_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, (int, float, str, bool, type(None))):
+        return obj
+    else:
+        return str(obj)  # Convert any other types to string
+
 @socketio.on('start_training')
 def handle_start_training(data):
     global training_thread
@@ -50,47 +65,30 @@ def handle_start_training(data):
     noise_level = data['noiseLevel']
     batch_size = data.get('batchSize', 1)
 
-    print(hidden_sizes)
-
     training_data = generate_dummy_data(num_data_points, input_size, output_size, noise_level, batch_size)
     nn = SimpleNeuralNetwork(input_size, hidden_sizes, output_size)
 
     def training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations, input_size):
-
-        # Convert NumPy arrays in forward_data, backward_data, and weights_biases_data to lists
-        def convert_to_list(data):
-            if isinstance(data, np.ndarray):
-                return data.tolist()
-            elif isinstance(data, dict):  # Handle nested dictionaries
-                return {key: convert_to_list(value) for key, value in data.items()}
-            elif isinstance(data, list):  # Handle lists of ndarrays
-                return [convert_to_list(item) for item in data]
-            return data
-
-        forward_data = convert_to_list(forward_data)
-        backward_data = convert_to_list(backward_data)
-        weights_biases_data = convert_to_list(weights_biases_data)
-        all_activations = convert_to_list(all_activations)
-
-        socketio.emit('training_update', {
+        serializable_data = {
             'input_size': input_size,
             'epoch': epoch,
-            'forward_data': forward_data,
-            'backward_data': backward_data,
-            'weights_biases_data': weights_biases_data,
-            'loss': loss,
-            'all_activations': all_activations
-        })
+            'forward_data': convert_to_serializable(forward_data),
+            'loss': float(loss),
+            'all_activations': convert_to_serializable(all_activations),
+            'backward_data': convert_to_serializable(backward_data),
+            'weights_biases_data': convert_to_serializable(weights_biases_data),
+        }
+
+        socketio.emit('training_update', serializable_data)
 
         socketio.emit('gradient_update', {
-            'loss': loss,
+            'loss': float(loss),
             'epoch': epoch,
-            'backward_data': backward_data
+            'backward_data': convert_to_serializable(backward_data)
         })
 
     def train_model():
         try:
-            # Wrap the original callback to include input_size
             def wrapped_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations):
                 training_callback(epoch, forward_data, backward_data, weights_biases_data, loss, all_activations, input_size)
 
@@ -102,6 +100,7 @@ def handle_start_training(data):
         except Exception as e:
             print(f"Training interrupted: {e}")
             socketio.emit('training_error', {"message": f"Training error: {str(e)}"})
+
     # Start the training in a new thread
     training_thread = Thread(target=train_model)
     training_thread.start()
