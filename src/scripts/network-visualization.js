@@ -1,7 +1,7 @@
 
 import { updateLossChart } from "./chart-logic.js";
 import { stopTraining } from './event-handlers.js';
-import { createNeuronPopup, updateNeuronPopup, hideNeuronPopup } from './neuron/neuron-info.js';
+import { getNodeData, handleNeuronMouseover, handleNeuronMouseleave, createNeuronPopup, updateNeuronPopup, hideNeuronPopup} from './neuron/neuron-info.js';
 
 let nodes = [];
 let links = [];
@@ -78,64 +78,16 @@ export function drawNeuralNetwork(layers, weights, data) {
                     .on("end", dragEnded)
                 )
                 .on("mouseenter", function (event) {
-                    isOverNode = true;
-                    clearTimeout(hidePopupTimeout);
-
-                    // Style for the hovered node
-                    d3.select(this).style("stroke", "rgba(0, 255, 255, 1)").style("stroke-width", "4px");
-
-                    let nodeData = {
-                        layerType: layerType,
-                        nodeIndex: i,
-                        weight: 'N/A',
-                        bias: 'N/A',
-                        preActivation: 'N/A',
-                        activation: 'N/A',
-                        gradient: 'N/A',
-                        backpropHistory: []
-                    };
-
-                    // Input Layer: Get input value dynamically
-                    if (layerIndex === 0) {
-                        if (forwardData && forwardData.input && forwardData.input.length > 0) {
-                            const singleSample = data.epoch % forwardData.input.length;  // Cycle through samples dynamically
-                            nodeData.inputValue = forwardData.input[singleSample][i];  // Get the value for this neuron
-                        }
-                    }
-                    // Hidden Layers
-                    else if (layerIndex > 0 && layerIndex < layers.length - 1) {
-                        if (forwardData && forwardData.hidden_activation && forwardData.hidden_activation.length > layerIndex - 1) {
-                            nodeData.preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation || 'N/A';
-                            nodeData.activation = forwardData.hidden_activation[layerIndex - 1].post_activation || 'N/A';
-                        }
-                    } 
-                    // Output Layer
-                    else if (layerIndex === layers.length - 1) {
-                        // You can handle the output layer here
-                    }
-
-                    popupGroup.raise();  // Raise the popup above other elements
-                    updateNeuronPopup(popup, event.pageX, event.pageY, nodeData);
-                    popup.style("display", "block");
+                    const nodeData = getNodeData(layerIndex, i, forwardData, data, layers);
+                    handleNeuronMouseover(popup, event, layerType, i, nodeData);  // Handles popup display and styling
                 })
-                .on("mouseleave", function () {
-                    isOverNode = false;
-                
-                    // Resume animation after leaving the node
-                    d3.selectAll(".node-animation").style("animation-play-state", "running");
-                
-                    d3.select(this).style("stroke", "white").style("stroke-width", "2px");
-                    hidePopupTimeout = setTimeout(() => {
-                        if (!isOverPopup) {
-                            hideNeuronPopup(popup);
-                        }
-                    }, 100);
+                .on("mouseleave", function (event) {
+                    handleNeuronMouseleave(popup, event);  // Handles popup hide and neuron styling reset
                 });
 
             nodes.push({ layerIndex, i, x, y, node: node.node(), layerType });
         }
     });
-
 
     // Create links (connections between nodes in adjacent layers)
     nodes.forEach(sourceNode => {
