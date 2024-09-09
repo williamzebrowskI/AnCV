@@ -19,38 +19,27 @@ socket.on('disconnect', function() {
     console.log("Disconnected from WebSocket server");
 });
 
-if (!socket.hasListeners('training_update')) {
-    socket.on('training_update', function(data) {
-        if (stopTraining) return;  // Stop updating the UI if training has stopped
+socket.on('training_update', function(data) {
+    if (stopTraining) return;  // Stop updating the UI if training has stopped
 
-        const inputSize = data.input_size;
+    const inputSize = data.input_size;
 
-        // Get hidden layer sizes using the global function
-        const hiddenLayerSizes = window.getHiddenLayerSizes();
+    // Get hidden layer sizes using the global function
+    const hiddenLayerSizes = window.getHiddenLayerSizes();
 
-        // Get output nodes from the form
-        const outputNodes = parseInt(document.getElementById('outputNodes').value);
+    // Get output nodes from the form
+    const outputNodes = parseInt(document.getElementById('outputNodes').value);
 
-        // Construct the layers array
-        const layers = [inputSize, ...hiddenLayerSizes, outputNodes];
+    // Construct the layers array
+    const layers = [inputSize, ...hiddenLayerSizes, outputNodes];
 
-        // Draw the updated network (even if forward_data is not yet available)
-        networkVisualization.drawNeuralNetwork(layers, data.weights_biases_data, data);
+    // Draw the updated network (even if forward_data is not yet available)
+    networkVisualization.drawNeuralNetwork(layers, data.weights_biases_data, data);
 
-        // Optionally animate forward and backward passes
-        networkVisualization.animateDataFlow(data);
+    // Optionally animate forward and backward passes
+    networkVisualization.animateDataFlow(data);
 
-        // Only capture activations if forward_data is present
-        if (data.forward_data && data.forward_data.hidden_activation) {
-            const forwardData = data.forward_data;
-            forwardData.hidden_activation.forEach((layer, index) => {
-                console.log(`Layer ${index + 1}:`);
-                console.log(`Pre-activation: `, layer.pre_activation);
-                console.log(`Post-activation: `, layer.post_activation);
-            });
-        }
-    });
-}
+});
 
 function redrawNetwork() {
     let inputNodes = parseInt(document.getElementById('inputNodes').value);
