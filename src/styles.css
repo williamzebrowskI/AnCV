@@ -59,21 +59,6 @@ html, body {
     color: var(--text-color);
 }
 
-#controls button {
-    width: 100%;
-    padding: 10px;
-    background-color: var(--accent-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-#controls button:hover {
-    background-color: var(--hover-color);
-} */
-
 #visualization {
     width: calc(100% - 260px);
     height: 100%;
@@ -129,33 +114,34 @@ html, body {
     top: 10px;
     right: 10px;
     font-size: 14px;
-    color: rgba(255, 99, 132, 1);  /* Matches the chart color */
+    color: rgba(255, 99, 132, 1);
     font-family: Arial, sans-serif;
     font-weight: bold;
 }
 
 .disabled-btn {
-    background-color: #ccc;  /* Shaded-out look */
-    cursor: not-allowed;     /* Not-allowed cursor */
-    opacity: 0.6;            /* Semi-transparent */
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 #gradientMapContainer {
     position: fixed;
-    bottom: 20px;  /* Make sure it's 20px from the bottom of the screen */
-    right: 20px;   /* Make sure it's 20px from the right of the screen */
-    width: 375px;  /* Adjust the width to fit within your screen */
-    height: 250px; /* Adjust the height to fit within your screen */
-    z-index: 1000; /* Make sure it's above other elements */
+    bottom: 20px;
+    right: 20px;
+    width: 375px;
+    height: 250px;
+    z-index: 1000;
     border: 2px solid white;
-    overflow: hidden;  /* Ensure no content goes outside the container */
+    overflow: hidden;
     border-radius: 8px;
 }
 
 #gradientMapContainer.expanded {
-    width: 625px;  /* Expanded width */
-    height: 500px; /* Expanded height */
+    width: 625px;
+    height: 500px;
 }
+
 #expandGradientBtn {
     position: absolute;
     top: 5px;
@@ -186,14 +172,11 @@ html, body {
     color: var(--text-color);
     text-align: center;
     font-size: 16px;
-    /* Remove default appearance */
     -webkit-appearance: none;
     appearance: none;
-    /* Remove spinner controls in Firefox */
     -moz-appearance: textfield;
 }
 
-/* Remove spinner controls in Webkit browsers */
 .number-input input::-webkit-outer-spin-button,
 .number-input input::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -217,4 +200,89 @@ html, body {
 
 .number-input button:active {
     box-shadow: inset 2px 2px 4px #222222, inset -2px -2px 4px #323232;
+}
+
+/* Styles for network nodes */
+.node circle {
+    fill: rgba(255, 255, 255, 0.1);
+    stroke: rgba(0, 255, 255, 1);
+    stroke-width: 4px;
+    transition: all 0.3s ease;
+}
+
+.node:hover circle {
+    stroke-width: 6px;
+    filter: drop-shadow(0 0 20px rgba(0, 255, 255, 1));
+}
+
+/* Styles for node connections */
+.link {
+    stroke: rgba(0, 255, 255, 0.5);
+    stroke-width: 1px;
+}
+
+/* Neuron Popup Styles */
+.neuron-popup {
+    display: none;
+    pointer-events: all;
+}
+
+.neuron-popup rect {
+    fill: url(#popupGradient);
+    stroke: rgba(0, 255, 255, 1);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 15px rgba(0, 100, 255, 1));
+}
+
+.neuron-popup .popup-title {
+    fill: rgba(255, 99, 132, 1);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    font-size: 18px;
+    text-shadow: 0 0 8px rgba(255, 99, 132, 1);
+}
+
+.neuron-popup .popup-weight,
+.neuron-popup .popup-bias,
+.neuron-popup .popup-pre-activation,
+.neuron-popup .popup-activation,
+.neuron-popup .popup-gradient {
+    fill: #ffffff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    text-shadow: 0 0 6px rgba(255, 99, 132, 1);
+    animation: glowAnimation 2s infinite;
+}
+
+.neuron-popup .sparkline {
+    fill: none;
+    stroke: rgba(0, 255, 255, 1);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 8px rgba(0, 255, 255, 1));
+}
+
+@keyframes glowAnimation {
+    0% { text-shadow: 0 0 8px rgba(255, 99, 132, 1); }
+    50% { text-shadow: 0 0 12px rgba(255, 99, 132, 1); }
+    100% { text-shadow: 0 0 8px rgba(255, 99, 132, 1); }
+}
+
+/* Node Styles */
+.node circle {
+    fill: rgba(255, 255, 255, 0.1);
+    stroke: rgba(0, 255, 255, 1);
+    stroke-width: 4px;
+    filter: drop-shadow(0 0 15px rgba(0, 100, 255, 1));
+    transition: all 0.3s ease;
+}
+
+.node:hover circle {
+    stroke-width: 6px;
+    filter: drop-shadow(0 0 20px rgba(0, 255, 255, 1));
+}
+
+/* Connection Styles */
+.link {
+    stroke: rgba(0, 255, 255, 0.5);
+    stroke-width: 1px;
 }
