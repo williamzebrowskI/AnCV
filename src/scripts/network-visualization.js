@@ -1,8 +1,8 @@
 
 import { updateLossChart } from "./chart-logic.js";
 import { stopTraining } from './event-handlers.js';
-import { createNeuronPopup, updateNeuronPopup, hideNeuronPopup } from './neuron/neuron-info.js';
-
+import { getNodeData, handleNeuronMouseover, handleNeuronMouseleave, createNeuronPopup, updateNeuronPopup, hideNeuronPopup} from './neuron/neuron-info.js';
+import { InputNode, HiddenNode, OutputNode } from './neuron/node.js';
 let nodes = [];
 let links = [];
 let popup;
@@ -12,7 +12,6 @@ let hidePopupTimeout;
 let selectedNodeIndex = 0
 
 export function drawNeuralNetwork(layers, weights, data) {
-
     console.log("Drawing neural network with layers:", layers);
     console.log("Received weights:", weights);
     d3.select("#visualization").html("");
@@ -21,15 +20,12 @@ export function drawNeuralNetwork(layers, weights, data) {
         .attr("width", window.innerWidth)
         .attr("height", window.innerHeight);
 
-    // Create groups for lights and popup
     const lightsGroup = svg.append("g").attr("class", "lights-group");
     const popupGroup = svg.append("g").attr("class", "popup-group");
 
     const forwardData = data ? data.forward_data : null;
-
     const width = window.innerWidth;
     const height = window.innerHeight;
-
     const layerSpacing = width / (layers.length + 1);
     const nodeRadius = 20;
 
@@ -53,85 +49,26 @@ export function drawNeuralNetwork(layers, weights, data) {
         const x = layerSpacing * (layerIndex + 1);
         const ySpacing = height / (layerSize + 1);
 
-        let layerType;
-        if (layerIndex === 0) {
-            layerType = "Input";
-        } else if (layerIndex === layers.length - 1) {
-            layerType = "Output";
-        } else {
-            layerType = `Hidden Layer ${layerIndex}`;
-        }
-
         for (let i = 0; i < layerSize; i++) {
             const y = ySpacing * (i + 1);
 
-            const node = svg.append("circle")
-                .attr("cx", x)
-                .attr("cy", y)
-                .attr("r", nodeRadius)
-                .style("fill", "rgba(255, 255, 255, 0.1)")
-                .style("stroke", "white")
-                .style("stroke-width", "2")
-                .call(d3.drag()
-                    .on("start", dragStarted)
-                    .on("drag", dragged)
-                    .on("end", dragEnded)
-                )
-                .on("mouseenter", function (event) {
-                    isOverNode = true;
-                    clearTimeout(hidePopupTimeout);
-                    
-                    // Pause node animation during hover
-                    d3.selectAll(".node-animation").style("animation-play-state", "paused");
-                
-                    // Style the hovered node differently
-                    d3.select(this).style("stroke", "rgba(0, 255, 255, 1)").style("stroke-width", "4px");
-                    
-                    let preActivation = 'N/A';
-                    let postActivation = 'N/A';
-                    
-                    if (layerIndex > 0 && layerIndex < layers.length - 1) {
-                        if (forwardData && forwardData.hidden_activation && forwardData.hidden_activation.length > layerIndex - 1) {
-                            preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation || 'N/A';
-                            postActivation = forwardData.hidden_activation[layerIndex - 1].post_activation || 'N/A';
-                        }
-                    }
-                    
-                    const nodeData = {
-                        layerType: layerType,
-                        nodeIndex: i,
-                        weight: 'N/A',
-                        bias: 'N/A',
-                        preActivation: preActivation,
-                        activation: postActivation,
-                        gradient: 'N/A',
-                        backpropHistory: []
-                    };
-                    
-                    popupGroup.raise();  // Raise the popup group above the lights
-                    updateNeuronPopup(popup, event.pageX, event.pageY, nodeData);
-                    popup.style("display", "block");
-                })
-                .on("mouseleave", function () {
-                    isOverNode = false;
-                
-                    // Resume animation after leaving the node
-                    d3.selectAll(".node-animation").style("animation-play-state", "running");
-                
-                    d3.select(this).style("stroke", "white").style("stroke-width", "2px");
-                    hidePopupTimeout = setTimeout(() => {
-                        if (!isOverPopup) {
-                            hideNeuronPopup(popup);
-                        }
-                    }, 100);
-                });
+            let node;
+            const nodeData = getNodeData(layerIndex, i, forwardData, data, layers);
 
-            nodes.push({ layerIndex, i, x, y, node: node.node(), layerType });
+            if (layerIndex === 0) {
+                node = new InputNode(x, y, nodeRadius, svg, i, popup, popupGroup);
+            } else if (layerIndex === layers.length - 1) {
+                node = new OutputNode(x, y, nodeRadius, svg, i, layers.length, popup, popupGroup);  // Pass layers.length here
+            } else {
+                node = new HiddenNode(x, y, nodeRadius, svg, layerIndex, i, popup, popupGroup);
+            }
+
+            node.updateData(nodeData);  // Update node with data
+            nodes.push(node);  // Store the node
         }
     });
 
-
-    // Create links (connections between nodes in adjacent layers)
+    // Create the links
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex < layers.length - 1) {
             const nextLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex + 1);
@@ -146,20 +83,24 @@ export function drawNeuralNetwork(layers, weights, data) {
                     weight = weights.hidden_weights[sourceNode.layerIndex][j] ? weights.hidden_weights[sourceNode.layerIndex][j][sourceNode.i] : null;
                 }
 
-                const line = lightsGroup.append("line")  // Use lightsGroup for line creation
+                const line = lightsGroup.append("line")
                     .attr("x1", sourceNode.x)
                     .attr("y1", sourceNode.y)
                     .attr("x2", targetNode.x)
                     .attr("y2", targetNode.y)
-                    .attr("stroke", "#ccc")
+                    .attr("stroke", "rgba(255, 0, 85, 1)")
                     .attr("stroke-width", 2)
                     .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
 
+                // On mouseenter, add a glow effect
                 line.on("mouseenter", function(event) {
-                    d3.select(this).attr("stroke", "rgba(255, 99, 132, 1)").attr("stroke-width", 4);
-                    
+                    d3.select(this)
+                        .attr("stroke", "rgba(255, 0, 85, 1)")
+                        .attr("stroke-width", 4)
+                        .style("filter", "drop-shadow(0 0 10px rgba(255, 0, 85, 1))");
+
                     let weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
-                    
+
                     const tooltip = svg.append("text")
                         .attr("x", (sourceNode.x + targetNode.x) / 2)
                         .attr("y", (sourceNode.y + targetNode.y) / 2 - 10)
@@ -169,7 +110,11 @@ export function drawNeuralNetwork(layers, weights, data) {
                         .text(`Weight: ${weightText}`);
 
                     d3.select(this).on("mouseleave", function() {
-                        d3.select(this).attr("stroke", "#ccc").attr("stroke-width", 2);
+                        d3.select(this)
+                            .attr("stroke", "rgba(255, 0, 85, 1)")
+                            .attr("stroke-width", 2)
+                            .style("filter", null);
+
                         tooltip.remove();
                     });
                 });
@@ -180,63 +125,16 @@ export function drawNeuralNetwork(layers, weights, data) {
     });
 }
 
-export function dragStarted(event, d) {
-    d3.select(this).raise().attr("stroke", "black");
-    const draggedNode = nodes.find(n => n.node === this);
-    if (draggedNode) {
-        updateNeuronPopup(popup, event.sourceEvent.pageX, event.sourceEvent.pageY, {
-            layerType: draggedNode.layerType,
-            nodeIndex: draggedNode.i,
-            weight: 'N/A',
-            bias: 'N/A',
-            activation: 'N/A',
-            gradient: 'N/A',
-            backpropHistory: []
-        });
-        popup.style("display", "block");
-    }
-}
+export function updateNodesWithData(data, layers) {
+    nodes.forEach(node => {
+        const layerIndex = node.layerIndex;
+        const nodeIndex = node.i;
 
-export function dragged(event, d) {
-    const draggedNode = nodes.find(n => n.node === this);
+        // Fetch data using layerIndex and nodeIndex, and pass layers to the function
+        let nodeData = getNodeData(layerIndex, nodeIndex, data.forward_data, data, layers);
 
-    if (!draggedNode) {
-        console.error("Dragged node not found.");
-        return;
-    }
-
-    // Move the node
-    d3.select(this)
-        .attr("cx", event.x)
-        .attr("cy", event.y);
-
-    // Update the node's position in the global nodes array
-    draggedNode.x = event.x;
-    draggedNode.y = event.y;
-
-    // Update the connections as the node is dragged
-    updateConnections(draggedNode);
-
-    // Update the popup position
-    updateNeuronPopup(popup, event.sourceEvent.pageX, event.sourceEvent.pageY, {
-        layerType: draggedNode.layerType,
-        nodeIndex: draggedNode.i,
-        weight: 'N/A',
-        bias: 'N/A',
-        activation: 'N/A',
-        gradient: 'N/A',
-        backpropHistory: []
+        node.updateData(nodeData);  // Push data to the node, which updates the popup
     });
-}
-
-export function dragEnded(event, d) {
-    d3.select(this).attr("stroke", "white");
-    if (!isOverPopup) {
-        hideNeuronPopup(popup);
-    }
-    
-    // Re-enable pointer events on the lines
-    d3.selectAll("line").style("pointer-events", "auto");
 }
 
 export function updateConnections(draggedNode) {
@@ -250,6 +148,7 @@ export function updateConnections(draggedNode) {
         }
     });
 }
+
 
 export function animateDataFlow(data) {
     console.log("Received data in animateDataFlow:", data); // Log the data
