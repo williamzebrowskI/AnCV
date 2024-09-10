@@ -1,4 +1,4 @@
-import {handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup } from './neuron-info.js'
+import {handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup } from './neuron-info.js';
 import { updateConnections } from '../network-visualization.js';
 
 let isOverPopup = false; 
@@ -25,6 +25,7 @@ class Node {
         this.layerIndex = layerType;
         this.i = nodeIndex;
 
+        // Add drag functionality using arrow functions to bind the correct context for `this`
         this.node.call(d3.drag()
             .on("start", event => this.dragStarted(event))
             .on("drag", event => this.dragged(event))
@@ -60,16 +61,44 @@ class Node {
     }
 
     updatePopupOnDrag(event) {
-        updateNeuronPopup(this.popup, event.sourceEvent.pageX, event.sourceEvent.pageY, {
-            layerType: this.layerType,
-            nodeIndex: this.nodeIndex,
-            weight: this.weight || 'N/A',
-            bias: this.bias || 'N/A',
-            activation: this.activation || 'N/A',
-            gradient: this.gradient || 'N/A',
-            backpropHistory: []
-        });
+        let nodeData = this.getNodeData();
+        updateNeuronPopup(this.popup, event.sourceEvent.pageX, event.sourceEvent.pageY, nodeData);
         this.popup.style("display", "block");
+    }
+
+    getNodeData() {
+        if (this.layerType === 0) {
+            return {
+                layerType: "Input",
+                nodeIndex: this.nodeIndex,
+                inputValue: this.inputValue || 'N/A'
+            };
+        } else {
+            return {
+                layerType: this.layerType === 1 ? "Hidden" : "Output",
+                nodeIndex: this.nodeIndex,
+                weight: this.weight || 'N/A',
+                bias: this.bias || 'N/A',
+                activation: this.activation || 'N/A',
+                gradient: this.gradient || 'N/A',
+                backpropHistory: []
+            };
+        }
+    }
+
+    formatValue(value) {
+        if (typeof value === 'number') return value.toFixed(4);
+        if (Array.isArray(value)) return value;
+        return value != null ? String(value) : 'N/A';
+    }
+
+    setupMouseEvents(nodeType, popupData) {
+        this.node.on("mouseenter", event => {
+            handleNeuronMouseover(this.popupGroup, this.popup, event, nodeType, this.nodeIndex, popupData);
+        });
+        this.node.on("mouseleave", event => {
+            handleNeuronMouseleave(this.popup, event);
+        });
     }
 }
 
@@ -79,13 +108,8 @@ export class InputNode extends Node {
     }
 
     updateData(data) {
-        const inputValue = data.inputValue != null ? data.inputValue.toFixed(4) : 'N/A';
-        this.node.on("mouseenter", event => {
-            handleNeuronMouseover(this.popupGroup, this.popup, event, "Input", this.nodeIndex, { inputValue });
-        });
-        this.node.on("mouseleave", event => {
-            handleNeuronMouseleave(this.popup, event);
-        });
+        const inputValue = this.formatValue(data.inputValue);
+        this.setupMouseEvents("Input", { inputValue });
     }
 }
 
@@ -97,34 +121,19 @@ export class HiddenNode extends Node {
     updateData(data) {
         const popupData = this.formatNodeData(data);
         console.log("Hidden Node Data:", popupData);
-        this.setupMouseEvents("Hidden", popupData);
+        this.setupMouseEvents(`Hidden Layer ${this.layerIndex}`, popupData);
     }
 
     formatNodeData(data) {
-        const formatValue = value => {
-            if (typeof value === 'number') return value.toFixed(4);
-            if (Array.isArray(value)) return value;
-            return value != null ? String(value) : 'N/A';
-        };
-
         return {
-            activation: formatValue(data.activation),
-            preActivation: formatValue(data.preActivation),
-            weight: formatValue(data.weight),
-            bias: formatValue(data.bias),
-            gradient: formatValue(data.gradient),
+            activation: this.formatValue(data.activation),
+            preActivation: this.formatValue(data.preActivation),
+            weight: this.formatValue(data.weight),
+            bias: this.formatValue(data.bias),
+            gradient: this.formatValue(data.gradient),
             layerIndex: this.layerType,
             nodeIndex: this.nodeIndex
         };
-    }
-
-    setupMouseEvents(nodeType, popupData) {
-        this.node.on("mouseenter", event => {
-            handleNeuronMouseover(this.popupGroup, this.popup, event, nodeType, this.nodeIndex, popupData);
-        });
-        this.node.on("mouseleave", event => {
-            handleNeuronMouseleave(this.popup, event);
-        });
     }
 }
 
@@ -140,30 +149,15 @@ export class OutputNode extends Node {
     }
 
     formatNodeData(data) {
-        const formatValue = value => {
-            if (typeof value === 'number') return value.toFixed(4);
-            if (Array.isArray(value)) return value;
-            return value != null ? String(value) : 'N/A';
-        };
-
         return {
-            outputValue: formatValue(data.outputValue),
-            activation: formatValue(data.activation),
-            preActivation: formatValue(data.preActivation),
-            weight: formatValue(data.weight),
-            bias: formatValue(data.bias),
-            gradient: formatValue(data.gradient),
-            error: formatValue(data.error),
+            outputValue: this.formatValue(data.outputValue),
+            activation: this.formatValue(data.activation),
+            preActivation: this.formatValue(data.preActivation),
+            weight: this.formatValue(data.weight),
+            bias: this.formatValue(data.bias),
+            gradient: this.formatValue(data.gradient),
+            error: this.formatValue(data.error),
             nodeIndex: this.nodeIndex
         };
-    }
-
-    setupMouseEvents(nodeType, popupData) {
-        this.node.on("mouseenter", event => {
-            handleNeuronMouseover(this.popupGroup, this.popup, event, nodeType, this.nodeIndex, popupData);
-        });
-        this.node.on("mouseleave", event => {
-            handleNeuronMouseleave(this.popup, event);
-        });
     }
 }
