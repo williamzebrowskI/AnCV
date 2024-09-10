@@ -137,6 +137,24 @@ export function updateNodesWithData(data, layers) {
         const nodeData = getNodeData(node.layerIndex, node.i, data.forward_data, data, layers);
         node.updateData(nodeData);
     });
+
+    // Rebind and update the nodes
+    const nodeSelection = d3.selectAll(".node")
+        .data(nodes)
+        .transition()
+        .duration(500)
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+
+    // Rebind and update the links
+    const linkSelection = d3.selectAll(".line")
+        .data(links)
+        .transition()
+        .duration(500)
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
 }
 
 export function updateConnections(draggedNode) {
@@ -156,16 +174,24 @@ export function animateDataFlow(data) {
 
     if (!Array.isArray(data)) data = [data];
 
-    data.forEach((epochData, index) => {
-        if (stopTraining) return;
+    let epochIndex = 0;
+    function animateEpoch() {
+        if (epochIndex < data.length && !stopTraining) {
+            const epochData = data[epochIndex];
 
-        const forwardDuration = epochData.forward_data.forward_time * 1000;
-        const backwardDuration = epochData.backward_data.backward_time * 1000;
+            const forwardDuration = epochData.forward_data.forward_time * 1000;
+            const backwardDuration = epochData.backward_data.backward_time * 1000;
 
-        animateForwardPass(epochData.forward_data, svg, forwardDuration);
-        animateBackwardPass(epochData.backward_data, svg, backwardDuration);
-        updateLossChart(epochData.epoch, epochData.loss);
-    });
+            animateForwardPass(epochData.forward_data, svg, forwardDuration);
+            animateBackwardPass(epochData.backward_data, svg, backwardDuration);
+            updateLossChart(epochData.epoch, epochData.loss);
+
+            epochIndex++;
+            requestAnimationFrame(animateEpoch);  // Recursively call for continuous animation
+        }
+    }
+
+    requestAnimationFrame(animateEpoch);
 }
 
 export function animateForwardPass(forwardData, svg, duration) {
@@ -227,23 +253,28 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
 }
 
 function animateAlongLine(startX, startY, endX, endY, light, duration, svg, targetNode, direction) {
-    light.transition()
-        .duration(duration)
-        .ease(d3.easeLinear)
-        .attrTween("transform", function () {
-            return function (t) {
-                const currentX = startX + (endX - startX) * t;
-                const currentY = startY + (endY - startY) * t;
-                return `translate(${currentX},${currentY})`;
-            };
-        })
-        .on("end", function () {
-            d3.select(this).remove();
+    let startTime;
 
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+
+        const currentX = startX + (endX - startX) * progress;
+        const currentY = startY + (endY - startY) * progress;
+
+        light.attr("transform", `translate(${currentX},${currentY})`);
+
+        if (progress < 1) {
+            requestAnimationFrame(step);
+        } else {
+            light.remove();
             if (direction === "forward" && targetNode && targetNode.layerIndex < nodes.length - 1) {
                 animateLightThroughLayer(targetNode, null, duration, svg, "forward");
             }
-        });
+        }
+    }
+
+    requestAnimationFrame(step);
 }
 
 export function clearNetwork() {
