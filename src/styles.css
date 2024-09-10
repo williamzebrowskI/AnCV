@@ -5,6 +5,8 @@
     --input-bg: #3a3a3a;
     --accent-color: #4a90e2;
     --hover-color: #3a7abd;
+    --sidebar-width: 300px;
+    --sidebar-collapsed-width: 30px;
 }
 
 * {
@@ -36,6 +38,27 @@ html, body {
     grid-template-columns: 1fr;
     gap: 15px;
     z-index: 10;
+    width: var(--sidebar-width);
+    transition: width 0.3s ease;
+}
+
+#controls.collapsed {
+    width: var(--sidebar-collapsed-width);
+    overflow: hidden;
+}
+
+#controls.collapsed > *:not(#sidebar-toggle) {
+    display: none;
+}
+
+#sidebar-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 24px;
+    color: var(--text-color);
+    z-index: 11;
 }
 
 #controls h3 {
@@ -65,6 +88,12 @@ html, body {
     position: relative;
     background-color: #1a1a1a;
     left: 100px;
+    transition: width 0.3s ease, left 0.3s ease;
+}
+
+#visualization.expanded {
+    width: calc(100% - var(--sidebar-collapsed-width));
+    left: var(--sidebar-collapsed-width);
 }
 
 #lossDisplay {
