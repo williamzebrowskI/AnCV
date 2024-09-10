@@ -3,6 +3,9 @@ let isOverPopup = false;
 let lastMousePosition = { x: 0, y: 0 };
 let hidePopupTimeout;
 
+// Add this variable to track the sidebar state
+let isSidebarCollapsed = false;
+
 export function createNeuronPopup(svg) {
     const popup = svg.append("g")
         .attr("class", "neuron-popup")
@@ -150,7 +153,20 @@ export function getNodeData(layerIndex, i, forwardData, data, layers) {
 }
 
 export function updateNeuronPopup(popup, x, y, data) {
-    popup.attr("transform", `translate(${x - 60},${y - 50})`)
+    // Adjust the x position based on the sidebar state and move to the right of the neuron
+    const sidebarWidth = isSidebarCollapsed ? 30 : 300; // Adjust these values as needed
+    const popupWidth = 240; // Width of the popup
+    const popupHeight = 225; // Height of the popup
+    const neuronRadius = 225; // Approximate radius of the neuron circle
+    const spacing = 15; // Space between neuron and popup
+
+    // Position to the right of the neuron
+    const adjustedX = x - sidebarWidth + neuronRadius + spacing;
+    
+    // Adjust y position to center the popup vertically with the neuron
+    const adjustedY = y - (popupHeight / 2);
+
+    popup.attr("transform", `translate(${adjustedX},${adjustedY})`)
         .style("display", "block");
 
     popup.select(".popup-title").text(`${data.layerType} Node ${data.nodeIndex}`);
@@ -204,8 +220,12 @@ export function updateNeuronPopup(popup, x, y, data) {
         if (!isOverNode) hideNeuronPopup(popup);
     });
 }
-
 export function hideNeuronPopup(popup) {
     popup.style("display", "none");
     document.removeEventListener('mousemove', trackMouseMovement);
+}
+
+// Add this function to update the sidebar state
+export function updateSidebarState(collapsed) {
+    isSidebarCollapsed = collapsed;
 }
