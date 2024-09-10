@@ -215,16 +215,16 @@ export function updateNeuronPopup(popup, x, y, data) {
     popup.select(".popup-title")
         .text(`${data.layerType} Node ${data.nodeIndex}`);
 
-    const formatValue = (value) => {
-        if (typeof value === 'number') return value.toFixed(4);
-        if (Array.isArray(value)) {
-            const avg = d3.mean(value).toFixed(4);
-            const min = d3.min(value).toFixed(4);
-            const max = d3.max(value).toFixed(4);
-            return `${avg}(Min: ${min}, Max: ${max})`;
-        }
-        return value || 'N/A';
-    };
+        const formatValue = (value) => {
+            if (typeof value === 'number') return value.toFixed(4);
+            if (Array.isArray(value)) {
+                const avg = d3.mean(value).toFixed(4);
+                const min = d3.min(value).toFixed(4);
+                const max = d3.max(value).toFixed(4);
+                return { avg, min, max, hasMinMax: value.length > 1 };  // Include flag if min/max should show
+            }
+            return value || 'N/A';
+        };        
 
     if (data.layerType === "Input") {
         popup.select(".popup-weight").text(`Input Value: ${formatValue(data.inputValue)}`);
@@ -233,12 +233,18 @@ export function updateNeuronPopup(popup, x, y, data) {
         popup.select(".popup-activation").text("");
         popup.select(".popup-gradient").text("");
     } else if (data.layerType === "Hidden" || data.layerType === "Output") {
-        popup.select(".popup-weight").text(`Weight Avg: ${formatValue(data.weight)}`);
-        if (Array.isArray(data.weight)) {
+        // Get weight info (average, min, max)
+        const weightInfo = formatValue(data.weight);
+
+        // First line: Weight Average
+        popup.select(".popup-weight").text(`Weight Avg: ${weightInfo.avg}`);
+
+        // Conditionally show the Min and Max only if there's more than one weight
+        if (weightInfo.hasMinMax) {
             popup.select(".popup-weight").append("tspan")
-                .attr("x", 15)
-                .attr("dy", "1.2em")
-                .text(`(${data.weight.length} incoming connections)`);
+                .attr("x", 30)  // Align properly under "Weight Avg"
+                .attr("dy", "1.2em")  // Move to the next line
+                .text(`Min: ${weightInfo.min}, Max: ${weightInfo.max}`);
         }
         popup.select(".popup-bias").text(`Bias: ${formatValue(data.bias)}`);
         popup.select(".popup-pre-activation").text(`Weighted Sum: ${formatValue(data.preActivation)}`);
