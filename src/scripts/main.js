@@ -113,3 +113,14 @@ document.addEventListener('resetHiddenLayers', () => {
 document.addEventListener('getHiddenLayerSizes', () => {
     document.dispatchEvent(new CustomEvent('hiddenLayerSizesResult', { detail: Object.values(hiddenLayers) }));
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const controls = document.getElementById('controls');
+    const visualization = document.getElementById('visualization');
+
+    sidebarToggle.addEventListener('click', function() {
+        controls.classList.toggle('collapsed');
+        visualization.classList.toggle('expanded');
+    });
+});
