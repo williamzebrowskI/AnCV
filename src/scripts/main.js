@@ -54,6 +54,7 @@ function removeHiddenLayer() {
 
 function handleNumberInputs(event) {
     const target = event.target;
+
     if (target.classList.contains('decrement') || target.classList.contains('increment')) {
         const input = target.parentElement.querySelector('input');
         const value = parseInt(input.value);
@@ -66,13 +67,21 @@ function handleNumberInputs(event) {
             input.value = value + step;
         }
 
-        const index = input.id.replace('hiddenLayerSize', '');
-        hiddenLayers[index] = parseInt(input.value);  // Update hiddenLayers object
+        // Check if this is for the input nodes
+        if (input.id === 'inputNodes') {
+            inputNodesElement.value = parseInt(input.value);  // Update inputNodesElement value
+        }
+        // Handle hidden layers
+        else if (input.id.startsWith('hiddenLayerSize')) {
+            const index = input.id.replace('hiddenLayerSize', '');
+            hiddenLayers[index] = parseInt(input.value);  // Update hiddenLayers object
+        }
 
-        input.dispatchEvent(new Event('input'));
+        input.dispatchEvent(new Event('input'));  // Trigger 'input' event
         updateNetworkVisualization();  // Ensure visualization is updated
     }
 }
+
 
 controls.addEventListener('click', handleNumberInputs);
 addHiddenLayerBtn.addEventListener('click', addHiddenLayer);
