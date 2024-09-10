@@ -1,6 +1,7 @@
 let isOverNode = false;
 let hidePopupTimeout;
 let isOverPopup = false;
+let lastMousePosition = { x: 0, y: 0 };
 
 export function createNeuronPopup(svg) {
     const popup = svg.append("g")
@@ -78,8 +79,6 @@ export function handleNeuronMouseover(popupGroup, popup, event, layerType, nodeI
     isOverNode = true;
     clearTimeout(hidePopupTimeout);  // Cancel any pending hide popup action
 
-    console.log('mouseover nodeData', nodeData )
-
     // Strengthen the neon blue glow on hover
     d3.select(event.target)
         .style("stroke", "rgba(0, 255, 255, 1)")  // Same neon blue stroke
@@ -97,6 +96,9 @@ export function handleNeuronMouseover(popupGroup, popup, event, layerType, nodeI
 
     popupGroup.raise();  // Bring popup group to front
     popup.style("display", "block");
+
+    // Add mousemove event listener to the document
+    document.addEventListener('mousemove', trackMouseMovement);
 }
 
 export function handleNeuronMouseleave(popup, event) {
@@ -107,6 +109,40 @@ export function handleNeuronMouseleave(popup, event) {
         .style("stroke", "rgba(0, 255, 255, 1)")  // Keep neon blue stroke
         .style("stroke-width", "4px")  // Revert to original width
         .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");  // Reduce glow intensity
+
+    // Check if the mouse is moving towards the popup
+    const popupRect = popup.node().getBoundingClientRect();
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
+
+    if (isMovingTowardsPopup(mouseX, mouseY, popupRect)) {
+        // If moving towards popup, set a timeout to hide it
+        hidePopupTimeout = setTimeout(() => {
+            if (!isOverPopup) {
+                hideNeuronPopup(popup);
+            }
+        }, 100);
+    } else {
+        // If not moving towards popup, hide it immediately
+        hideNeuronPopup(popup);
+    }
+}
+
+function isMovingTowardsPopup(mouseX, mouseY, popupRect) {
+    const deltaX = mouseX - lastMousePosition.x;
+    const deltaY = mouseY - lastMousePosition.y;
+
+    const isMovingRight = deltaX > 0 && mouseX < popupRect.left;
+    const isMovingLeft = deltaX < 0 && mouseX > popupRect.right;
+    const isMovingDown = deltaY > 0 && mouseY < popupRect.top;
+    const isMovingUp = deltaY < 0 && mouseY > popupRect.bottom;
+
+    return isMovingRight || isMovingLeft || isMovingDown || isMovingUp;
+}
+
+function trackMouseMovement(event) {
+    lastMousePosition.x = event.clientX;
+    lastMousePosition.y = event.clientY;
 }
 
 export function getNodeData(layerIndex, i, forwardData, data, layers) {
@@ -163,13 +199,6 @@ export function getNodeData(layerIndex, i, forwardData, data, layers) {
             console.log('Output Activation data missing.');
         }
     }
-
-    // Hide the popup after a delay if not hovering over it
-    hidePopupTimeout = setTimeout(() => {
-        if (!isOverPopup) {
-            hideNeuronPopup(popup);  // Call to hide popup if not hovering over it
-            }
-    }, 300);  // Delay to allow moving between the node and popup
 
     console.log('Final Node Data:', nodeData);
     return nodeData;
@@ -249,9 +278,23 @@ export function updateNeuronPopup(popup, x, y, data) {
     } else {
         popup.select(".sparkline").attr("d", ""); // Clear sparkline if no data
     }
-}
 
+    // Add mouse enter and leave events to the popup
+    popup.on("mouseenter", () => {
+        isOverPopup = true;
+        clearTimeout(hidePopupTimeout);
+    });
+
+    popup.on("mouseleave", () => {
+        isOverPopup = false;
+        if (!isOverNode) {
+            hideNeuronPopup(popup);
+        }
+    });
+}
 
 export function hideNeuronPopup(popup) {
     popup.style("display", "none");
+    // Remove the mousemove event listener when hiding the popup
+    document.removeEventListener('mousemove', trackMouseMovement);
 }
