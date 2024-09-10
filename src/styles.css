@@ -236,9 +236,8 @@ html, body {
 
 .neuron-popup .popup-title {
     fill: rgba(255, 99, 132, 1);
-    font-family: 'Orbitron', sans-serif;
     font-weight: bold;
-    font-size: 18px;
+    font-size: 14px;
     text-shadow: 0 0 8px rgba(255, 99, 132, 1);
 }
 
