@@ -4,52 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neural Network Visualizer</title>
-    <link rel="stylesheet" href="src/styles.css"> <!-- Link to the external stylesheet -->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> <!-- Plotly.js -->
+    <link rel="stylesheet" href="src/styles.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-    <!-- Left-side controls -->
     <div id="controls">
+        <div id="sidebar-toggle">&#9776;</div>
         <h3>Neural Network</h3>
-        <label for="inputNodes">Input Nodes:</label>
-        <input type="number" id="inputNodes" value="4" min="1">
-
-        <h3>Hidden Layers</h3>
-        <div id="hiddenLayersContainer">
+        <div class="input-group">
+            <label for="frameworkSelect">Framework:</label>
+            <select id="frameworkSelect">
+                <option value="pytorch" selected>PyTorch</option>
+            </select>
         </div>
+        <div class="input-group">
+            <label for="inputNodes">Input Nodes:</label>
+            <div class="number-input">
+                <button class="decrement">-</button>
+                <input type="number" id="inputNodes" value="4" min="1">
+                <button class="increment">+</button>
+            </div>
+        </div>
+        <h3>Hidden Layers</h3>
+        <div id="hiddenLayersContainer"></div>
         <button id="addHiddenLayerBtn">Add Hidden Layer</button>
         <button id="removeHiddenLayerBtn">Remove Hidden Layer</button>
-
-        <label for="outputNodes">Output Nodes:</label>
-        <input type="number" id="outputNodes" value="1" min="1">
-
+        <div class="input-group">
+            <label for="outputNodes">Output Nodes:</label>
+            <div class="number-input">
+                <button class="decrement">-</button>
+                <input type="number" id="outputNodes" value="1" min="1">
+                <button class="increment">+</button>
+            </div>
+        </div>
         <h3>Training</h3>
-        <label for="epochs">Epochs:</label>
-        <input type="number" id="epochs" value="100" min="1">
-
-        <label for="batchSize">Batch Size</label>
-        <input type="number" id="batchSize" value="16" min="1"> <!-- Default value 1 -->
-
-        <label for="learningRate">Learning Rate:</label>
-        <input type="number" id="learningRate" value="0.001" step="0.001" min="0.000001">
-
+        <div class="input-group">
+            <label for="epochs">Epochs:</label>
+            <div class="number-input">
+                <button class="decrement">-</button>
+                <input type="number" id="epochs" value="100" min="1">
+                <button class="increment">+</button>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="batchSize">Batch Size:</label>
+            <div class="number-input">
+                <button class="decrement">-</button>
+                <input type="number" id="batchSize" value="16" min="1">
+                <button class="increment">+</button>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="learningRate">Learning Rate:</label>
+            <div class="number-input">
+                <button class="decrement">-</button>
+                <input type="number" id="learningRate" value="0.001" step="0.001" min="0.000001">
+                <button class="increment">+</button>
+            </div>
+        </div>
         <h3>Data</h3>
-        <label for="numDataPoints">Number of Data Points:</label>
-        <input type="number" id="numDataPoints" value="100" min="1">
-
-        <label for="noiseLevel">Noise Level:</label>
-        <input type="number" id="noiseLevel" value="0.1" step="0.01" min="0">
-
+        <div class="input-group">
+            <label for="numDataPoints">Number of Data Points:</label>
+            <div class="number-input">
+                <button class="decrement">-</button>
+                <input type="number" id="numDataPoints" value="100" min="1">
+                <button class="increment">+</button>
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="noiseLevel">Noise Level:</label>
+            <div class="number-input">
+                <button class="decrement">-</button>
+                <input type="number" id="noiseLevel" value="0.1" step="0.01" min="0">
+                <button class="increment">+</button>
+            </div>
+        </div>
         <button id="loadNetworkBtn">Load Neural Network</button>
         <button id="trainNetworkBtn">Train Neural Network</button>
         <button id="stopTrainingBtn">Stop Training</button>
         <button id="resetAllBtn">Reset All</button>
     </div>
 
-    <!-- Neural network diagram area -->
     <div id="visualization"></div>
 
-    <!-- Loss display box with canvas for chart -->
     <div id="lossDisplay">
         <canvas id="lossChart"></canvas>
         <button id="expandBtn"><></button>
@@ -60,119 +97,13 @@
         <button id="expandGradientBtn"><></button>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js -->
-    <script src="https://d3js.org/d3.v7.min.js"></script> <!-- D3.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/controls/OrbitControls.js"></script>
 
-    <script type="module">
-
-import { drawNeuralNetwork } from './src/scripts/network-visualization.js';
-
-let hiddenLayers = {1:4, 2:2}; // Dictionary to store hidden layers and their sizes
-
-const inputNodesElement = document.getElementById('inputNodes');
-const outputNodesElement = document.getElementById('outputNodes');
-const hiddenLayersContainer = document.getElementById('hiddenLayersContainer');
-const addHiddenLayerBtn = document.getElementById('addHiddenLayerBtn');
-const removeHiddenLayerBtn = document.getElementById('removeHiddenLayerBtn');
-
-function updateNetworkVisualization() {
-    const inputNodes = parseInt(inputNodesElement.value);
-    const outputNodes = parseInt(outputNodesElement.value);
-    const hiddenLayerSizes = Object.values(hiddenLayers);
-
-    console.log('Hidden layer sizes:', hiddenLayerSizes);
-
-    // Combine input, hidden, and output layer sizes
-    const layers = [inputNodes, ...hiddenLayerSizes, outputNodes];
-
-    console.log('Network structure:', layers);
-
-    // Draw the network with updated layers
-    drawNeuralNetwork(layers, null);  // Pass null for weights if not using weights here
-}
-
-function renderHiddenLayers() {
-    hiddenLayersContainer.innerHTML = ''; // Clear existing layers
-    Object.entries(hiddenLayers).forEach(([index, size]) => {
-        const layerDiv = document.createElement('div');
-        layerDiv.innerHTML = `
-            <label for="hiddenLayerSize${index}">Hidden Layer ${index} Size:</label>
-            <input type="number" id="hiddenLayerSize${index}" value="${size}" min="1">
-        `;
-        hiddenLayersContainer.appendChild(layerDiv);
-
-        const input = layerDiv.querySelector('input');
-        input.addEventListener('input', () => {
-            hiddenLayers[index] = parseInt(input.value);
-            updateNetworkVisualization();
-        });
-    });
-}
-
-function addHiddenLayer() {
-    const newIndex = Object.keys(hiddenLayers).length + 1;
-    hiddenLayers[newIndex] = 2; // Default size of 2
-    renderHiddenLayers();
-    updateNetworkVisualization();
-    console.log('Hidden layer added. New structure:', hiddenLayers);
-}
-
-function removeHiddenLayer() {
-    const lastIndex = Object.keys(hiddenLayers).length;
-    if (lastIndex > 0) {
-        delete hiddenLayers[lastIndex];
-        renderHiddenLayers();
-        updateNetworkVisualization();
-        console.log('Hidden layer removed. New structure:', hiddenLayers);
-    }
-}
-
-function initializeExistingLayers() {
-    const existingLayers = hiddenLayersContainer.querySelectorAll('input[type="number"]');
-    existingLayers.forEach((input, index) => {
-        hiddenLayers[index + 1] = parseInt(input.value);
-    });
-    renderHiddenLayers();
-    console.log('Initialized existing layers:', hiddenLayers);
-}
-
-// Add event listeners to buttons
-addHiddenLayerBtn.addEventListener('click', addHiddenLayer);
-removeHiddenLayerBtn.addEventListener('click', removeHiddenLayer);
-
-// Add listeners to input and output node elements
-inputNodesElement.addEventListener('input', updateNetworkVisualization);
-outputNodesElement.addEventListener('input', updateNetworkVisualization);
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM fully loaded. Initializing network visualization.');
-    initializeExistingLayers();
-    updateNetworkVisualization();
-});
-
-// Add this function
-window.getHiddenLayerSizes = function() {
-    return Object.values(hiddenLayers);
-};
-
-// Listen for reset event
-document.addEventListener('resetHiddenLayers', function(e) {
-    hiddenLayers = {1: 4, 2: 2}; // Reset to default
-    renderHiddenLayers();
-});
-
-// Listen for get sizes event
-document.addEventListener('getHiddenLayerSizes', function(e) {
-    const sizes = Object.values(hiddenLayers);
-    document.dispatchEvent(new CustomEvent('hiddenLayerSizesResult', { detail: sizes }));
-});
-    </script>
-
-    <!-- Import custom scripts -->
+    <script type="module" src="src/scripts/main.js"></script>
     <script src="src/scripts/gradiant.js"></script>
     <script type="module" src="src/scripts/chart-logic.js"></script>
     <script type="module" src="src/scripts/event-handlers.js"></script>

@@ -1,50 +1,86 @@
-html, body {
+:root {
+    --bg-color: #1a1a1a;
+    --sidebar-bg: #2a2a2a;
+    --text-color: #e0e0e0;
+    --input-bg: #3a3a3a;
+    --accent-color: #4a90e2;
+    --hover-color: #3a7abd;
+    --sidebar-width: 300px;
+    --sidebar-collapsed-width: 30px;
+}
+
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #1a1a1a;
-    font-family: Arial, sans-serif;
+    background-color: var(--bg-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-color);
 }
 
 #controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    background-color: var(--sidebar-bg);
+    padding: 20px;
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    z-index: 10;
+    width: var(--sidebar-width);
+    transition: width 0.3s ease;
+}
+
+#controls.collapsed {
+    width: var(--sidebar-collapsed-width);
+    overflow: hidden;
+}
+
+#controls.collapsed > *:not(#sidebar-toggle) {
+    display: none;
+}
+
+#sidebar-toggle {
     position: absolute;
     top: 10px;
-    left: 10px;
-    z-index: 10;
-    background-color: rgba(255, 255, 255, 0.8);
-    padding: 15px;
-    border-radius: 8px;
-    width: 250px;
-    max-height: 100vh; /* Set a max height for the controls */
-    overflow-y: auto; /* Enable vertical scrolling if content overflows */
+    right: 10px;
+    cursor: pointer;
+    font-size: 24px;
+    color: var(--text-color);
+    z-index: 11;
+}
+
+#controls h3 {
+    margin-top: 15px;
+    border-bottom: 1px solid var(--accent-color);
+    padding-bottom: 5px;
 }
 
 #controls label {
     display: block;
     margin-bottom: 5px;
-    font-weight: bold;
-    color: #333;
+    font-weight: 600;
 }
 
-#controls input {
-    margin-bottom: 15px;
+#controls input, #controls select {
     width: 100%;
-    padding: 0px;
+    padding: 8px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--accent-color);
+    border-radius: 4px;
+    color: var(--text-color);
 }
-
-#controls button {
-    margin-bottom: 10px;
-    width: 100%;
-    padding: 10px;
-    background-color: #333;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
 
 #visualization {
     width: calc(100% - 260px);
@@ -52,6 +88,12 @@ html, body {
     position: relative;
     background-color: #1a1a1a;
     left: 100px;
+    transition: width 0.3s ease, left 0.3s ease;
+}
+
+#visualization.expanded {
+    width: calc(100% - var(--sidebar-collapsed-width));
+    left: var(--sidebar-collapsed-width);
 }
 
 #lossDisplay {
@@ -101,33 +143,34 @@ html, body {
     top: 10px;
     right: 10px;
     font-size: 14px;
-    color: rgba(255, 99, 132, 1);  /* Matches the chart color */
+    color: rgba(255, 99, 132, 1);
     font-family: Arial, sans-serif;
     font-weight: bold;
 }
 
 .disabled-btn {
-    background-color: #ccc;  /* Shaded-out look */
-    cursor: not-allowed;     /* Not-allowed cursor */
-    opacity: 0.6;            /* Semi-transparent */
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 #gradientMapContainer {
     position: fixed;
-    bottom: 20px;  /* Make sure it's 20px from the bottom of the screen */
-    right: 20px;   /* Make sure it's 20px from the right of the screen */
-    width: 375px;  /* Adjust the width to fit within your screen */
-    height: 250px; /* Adjust the height to fit within your screen */
-    z-index: 1000; /* Make sure it's above other elements */
+    bottom: 20px;
+    right: 20px;
+    width: 375px;
+    height: 250px;
+    z-index: 1000;
     border: 2px solid white;
-    overflow: hidden;  /* Ensure no content goes outside the container */
+    overflow: hidden;
     border-radius: 8px;
 }
 
 #gradientMapContainer.expanded {
-    width: 625px;  /* Expanded width */
-    height: 500px; /* Expanded height */
+    width: 625px;
+    height: 500px;
 }
+
 #expandGradientBtn {
     position: absolute;
     top: 5px;
@@ -140,4 +183,134 @@ html, body {
     font-size: 16px;
     color: rgba(255, 99, 132, 1);
     transform: rotate(45deg);
+}
+
+.number-input {
+    display: flex;
+    align-items: center;
+    background-color: var(--sidebar-bg);
+    border-radius: 10px;
+    padding: 5px;
+    box-shadow: inset 3px 3px 6px #222222, inset -3px -3px 6px #323232;
+}
+
+.number-input input {
+    width: 60px;
+    background-color: transparent;
+    border: none;
+    color: var(--text-color);
+    text-align: center;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+    -moz-appearance: textfield;
+}
+
+.number-input input::-webkit-outer-spin-button,
+.number-input input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-input button {
+    background-color: var(--sidebar-bg);
+    color: var(--text-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0 5px;
+    box-shadow: 3px 3px 6px #222222, -3px -3px 6px #323232;
+}
+
+.number-input button:active {
+    box-shadow: inset 2px 2px 4px #222222, inset -2px -2px 4px #323232;
+}
+
+/* Styles for network nodes */
+.node circle {
+    fill: rgba(255, 255, 255, 0.1);
+    stroke: rgba(0, 255, 255, 1);
+    stroke-width: 4px;
+    transition: all 0.3s ease;
+}
+
+.node:hover circle {
+    stroke-width: 6px;
+    filter: drop-shadow(0 0 20px rgba(0, 255, 255, 1));
+}
+
+/* Styles for node connections */
+.link {
+    stroke: rgba(0, 255, 255, 0.5);
+    stroke-width: 1px;
+}
+
+/* Neuron Popup Styles */
+.neuron-popup {
+    display: none;
+    pointer-events: all;
+}
+
+.neuron-popup rect {
+    fill: url(#popupGradient);
+    stroke: rgba(0, 255, 255, 1);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 15px rgba(0, 100, 255, 1));
+}
+
+.neuron-popup .popup-title {
+    fill: rgba(255, 99, 132, 1);
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 0 0 8px rgba(255, 99, 132, 1);
+}
+
+.neuron-popup .popup-weight,
+.neuron-popup .popup-bias,
+.neuron-popup .popup-pre-activation,
+.neuron-popup .popup-activation,
+.neuron-popup .popup-gradient {
+    fill: #ffffff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    text-shadow: 0 0 6px rgba(255, 99, 132, 1);
+    animation: glowAnimation 2s infinite;
+}
+
+.neuron-popup .sparkline {
+    fill: none;
+    stroke: rgba(0, 255, 255, 1);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 8px rgba(0, 255, 255, 1));
+}
+
+@keyframes glowAnimation {
+    0% { text-shadow: 0 0 8px rgba(255, 99, 132, 1); }
+    50% { text-shadow: 0 0 12px rgba(255, 99, 132, 1); }
+    100% { text-shadow: 0 0 8px rgba(255, 99, 132, 1); }
+}
+
+/* Node Styles */
+.node circle {
+    fill: rgba(255, 255, 255, 0.1);
+    stroke: rgba(0, 255, 255, 1);
+    stroke-width: 4px;
+    filter: drop-shadow(0 0 15px rgba(0, 100, 255, 1));
+    transition: all 0.3s ease;
+}
+
+.node:hover circle {
+    stroke-width: 6px;
+    filter: drop-shadow(0 0 20px rgba(0, 255, 255, 1));
+}
+
+/* Connection Styles */
+.link {
+    stroke: rgba(0, 255, 255, 0.5);
+    stroke-width: 1px;
 }

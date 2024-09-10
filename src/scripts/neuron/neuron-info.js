@@ -1,52 +1,52 @@
 let isOverNode = false;
-let hidePopupTimeout;
 let isOverPopup = false;
+let lastMousePosition = { x: 0, y: 0 };
+let hidePopupTimeout;
+
+// Add this variable to track the sidebar state
+let isSidebarCollapsed = false;
 
 export function createNeuronPopup(svg) {
     const popup = svg.append("g")
         .attr("class", "neuron-popup")
         .style("display", "none")
-        .style("pointer-events", "all"); 
+        .style("pointer-events", "all");
 
-    // Futuristic background with a gradient and glowing border
     popup.append("rect")
         .attr("width", 240)
         .attr("height", 250)
-        .attr("fill", "url(#popupGradient)")  // Gradient fill
-        .attr("stroke", "rgba(0, 255, 255, 1)")  // Neon glowing effect
+        .attr("fill", "url(#popupGradient)")
+        .attr("stroke", "rgba(0, 255, 255, 1)")
         .attr("stroke-width", 2)
         .attr("rx", 15)
         .attr("ry", 15)
         .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");
 
-    // Define gradient for background
     svg.append("defs").append("linearGradient")
         .attr("id", "popupGradient")
-        .attr("x1", "0%")
-        .attr("y1", "0%")
-        .attr("x2", "100%")
-        .attr("y2", "100%")
-        .append("stop").attr("offset", "0%").attr("stop-color", "#0f0f0f")
-        .append("stop").attr("offset", "100%").attr("stop-color", "#2f2f2f");
+        .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "100%")
+        .selectAll("stop")
+        .data([
+            { offset: "0%", color: "#0f0f0f" },
+            { offset: "100%", color: "#2f2f2f" }
+        ])
+        .enter().append("stop")
+        .attr("offset", d => d.offset)
+        .attr("stop-color", d => d.color);
 
-    // Title text for node info with neon glow
     popup.append("text")
         .attr("class", "popup-title")
-        .attr("x", 15)
-        .attr("y", 30)
+        .attr("x", 15).attr("y", 30)
         .attr("fill", "rgba(255, 99, 132, 1)")
-        .style("font-family", "'Orbitron', sans-serif")  // Futuristic font
+        .style("font-family", "'Orbitron', sans-serif")
         .style("font-weight", "bold")
         .style("font-size", "18px")
         .style("text-shadow", "0 0 8px rgba(255, 99, 132, 1)");
 
-    // Data fields with animated glow effect
-    const fields = ["weight", "bias", "pre-activation", "activation", "gradient"];
-    fields.forEach((field, index) => {
+    ["weight", "bias", "pre-activation", "activation", "gradient"].forEach((field, index) => {
         popup.append("text")
             .attr("class", `popup-${field}`)
-            .attr("x", 15)
-            .attr("y", 60 + index * 30)
+            .attr("x", 15).attr("y", 60 + index * 30)
             .attr("fill", "#ffffff")
             .style("font-family", "'Orbitron', sans-serif")
             .style("font-size", "14px")
@@ -54,20 +54,17 @@ export function createNeuronPopup(svg) {
             .style("animation", "glowAnimation 2s infinite");
     });
 
-    // Sparkline with neon glow effect
-    const sparkline = popup.append("path")
+    popup.append("path")
         .attr("class", "sparkline")
         .attr("fill", "none")
-        .attr("stroke", "rgba(0, 255, 255, 1)")  // Neon pink color for the sparkline
+        .attr("stroke", "rgba(0, 255, 255, 1)")
         .attr("stroke-width", 2)
         .style("filter", "drop-shadow(0 0 8px rgba(0, 255, 255, 1))");
 
-    // CSS animations for glowing effect
     svg.append("style").text(`
         @keyframes glowAnimation {
-            0% { text-shadow: 0 0 8px rgba(255, 99, 132, 1); }
+            0%, 100% { text-shadow: 0 0 8px rgba(255, 99, 132, 1); }
             50% { text-shadow: 0 0 12px rgba(255, 99, 132, 1); }
-            100% { text-shadow: 0 0 8px rgba(255, 99, 132, 1); }
         }
     `);
 
@@ -76,182 +73,159 @@ export function createNeuronPopup(svg) {
 
 export function handleNeuronMouseover(popupGroup, popup, event, layerType, nodeIndex, nodeData) {
     isOverNode = true;
-    clearTimeout(hidePopupTimeout);  // Cancel any pending hide popup action
+    clearTimeout(hidePopupTimeout);
 
-    console.log('mouseover nodeData', nodeData )
-
-    // Strengthen the neon blue glow on hover
     d3.select(event.target)
-        .style("stroke", "rgba(0, 255, 255, 1)")  // Same neon blue stroke
-        .style("stroke-width", "6px")  // Increase stroke width on hover
-        .style("filter", "drop-shadow(0 0 20px rgba(0, 255, 255, 1))");  // Brighter neon glow
+        .style("stroke", "rgba(0, 255, 255, 1)")
+        .style("stroke-width", "6px")
+        .style("filter", "drop-shadow(0 0 20px rgba(0, 255, 255, 1))");
 
-    const x = isNaN(event.pageX) ? event.clientX : event.pageX;
-    const y = isNaN(event.pageY) ? event.clientY : event.pageY;
+    const x = event.pageX || event.clientX;
+    const y = event.pageY || event.clientY;
 
-    updateNeuronPopup(popup, x, y, {
-        layerType: layerType,
-        nodeIndex: nodeIndex,
-        ...nodeData
-    });
+    updateNeuronPopup(popup, x, y, { layerType, nodeIndex, ...nodeData });
 
-    popupGroup.raise();  // Bring popup group to front
+    popupGroup.raise();
     popup.style("display", "block");
+
+    document.addEventListener('mousemove', trackMouseMovement);
 }
 
 export function handleNeuronMouseleave(popup, event) {
     isOverNode = false;
 
-    // Reduce the glow effect when leaving the node
     d3.select(event.target)
-        .style("stroke", "rgba(0, 255, 255, 1)")  // Keep neon blue stroke
-        .style("stroke-width", "4px")  // Revert to original width
-        .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");  // Reduce glow intensity
+        .style("stroke", "rgba(0, 255, 255, 1)")
+        .style("stroke-width", "4px")
+        .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");
+
+    const popupRect = popup.node().getBoundingClientRect();
+    const { clientX: mouseX, clientY: mouseY } = event;
+
+    if (isMovingTowardsPopup(mouseX, mouseY, popupRect)) {
+        hidePopupTimeout = setTimeout(() => {
+            if (!isOverPopup) hideNeuronPopup(popup);
+        }, 100);
+    } else {
+        hideNeuronPopup(popup);
+    }
 }
+
+function isMovingTowardsPopup(mouseX, mouseY, popupRect) {
+    const deltaX = mouseX - lastMousePosition.x;
+    const deltaY = mouseY - lastMousePosition.y;
+
+    return (deltaX > 0 && mouseX < popupRect.left) ||
+           (deltaX < 0 && mouseX > popupRect.right) ||
+           (deltaY > 0 && mouseY < popupRect.top) ||
+           (deltaY < 0 && mouseY > popupRect.bottom);
+}
+
+const trackMouseMovement = (event) => {
+    lastMousePosition = { x: event.clientX, y: event.clientY };
+};
 
 export function getNodeData(layerIndex, i, forwardData, data, layers) {
     const nodeData = {
-        weight: 'N/A',
-        bias: 'N/A',
-        preActivation: 'N/A',
-        activation: 'N/A',
-        gradient: 'N/A',
-        backpropHistory: []
+        weight: 'N/A', bias: 'N/A', preActivation: 'N/A',
+        activation: 'N/A', gradient: 'N/A', backpropHistory: []
     };
 
-    if (layerIndex === 0) {
-        // Input layer logic
-        if (forwardData && forwardData.input && forwardData.input.length > 0) {
-            const singleSample = data.epoch % forwardData.input.length;
-            nodeData.inputValue = forwardData.input[singleSample][i];
-            console.log('Input Value:', nodeData.inputValue);
-        }
+    if (layerIndex === 0 && forwardData?.input?.length > 0) {
+        const singleSample = data.epoch % forwardData.input.length;
+        nodeData.inputValue = forwardData.input[singleSample][i];
     } else if (layerIndex > 0 && layerIndex < layers.length - 1) {
-        // Hidden layer logic
-        console.log('Checking Hidden Layer Activations...');
-        if (forwardData && forwardData.hidden_activation && forwardData.hidden_activation.length > layerIndex - 1) {
-            console.log('Hidden Activation:', forwardData.hidden_activation[layerIndex - 1]);
-
-            // Pre-activation and activation
-            nodeData.preActivation = forwardData.hidden_activation[layerIndex - 1].pre_activation || 'N/A';
-            nodeData.activation = forwardData.hidden_activation[layerIndex - 1].post_activation || 'N/A';
-            console.log('Pre-activation:', nodeData.preActivation);
-            console.log('Post-activation:', nodeData.activation);
-
-            // Weight and bias
-            nodeData.weight = data.weights_biases_data.hidden_weights[layerIndex - 1][i] || 'N/A';
-            nodeData.bias = data.weights_biases_data.hidden_biases[layerIndex - 1][i] || 'N/A';
-            console.log('Weight:', nodeData.weight);
-            console.log('Bias:', nodeData.bias);
-        } else {
-            console.log('Hidden Activation data missing or incomplete.');
+        const hiddenActivation = forwardData?.hidden_activation?.[layerIndex - 1];
+        if (hiddenActivation) {
+            nodeData.preActivation = hiddenActivation.pre_activation;
+            nodeData.activation = hiddenActivation.post_activation;
+            nodeData.weight = data.weights_biases_data.hidden_weights[layerIndex - 1][i];
+            nodeData.bias = data.weights_biases_data.hidden_biases[layerIndex - 1][i];
         }
-    } else if (layerIndex === layers.length - 1) {
-        // Output layer logic
-        console.log('Checking Output Layer Activations...');
-        if (forwardData && forwardData.output_activation) {
-            nodeData.preActivation = forwardData.output_activation.pre_activation || 'N/A';
-            nodeData.activation = forwardData.output_activation.post_activation || 'N/A';
-            console.log('Pre-activation:', nodeData.preActivation);
-            console.log('Post-activation:', nodeData.activation);
-
-            nodeData.weight = data.weights_biases_data.output_weights[i] || 'N/A';
-            nodeData.bias = data.weights_biases_data.output_biases[i] || 'N/A';
-            console.log('Weight:', nodeData.weight);
-            console.log('Bias:', nodeData.bias);
-        } else {
-            console.log('Output Activation data missing.');
-        }
+    } else if (layerIndex === layers.length - 1 && forwardData?.output_activation) {
+        nodeData.preActivation = forwardData.output_activation.pre_activation;
+        nodeData.activation = forwardData.output_activation.post_activation;
+        nodeData.weight = data.weights_biases_data.output_weights[i];
+        nodeData.bias = data.weights_biases_data.output_biases[i];
     }
 
-    // Hide the popup after a delay if not hovering over it
-    hidePopupTimeout = setTimeout(() => {
-        if (!isOverPopup) {
-            hideNeuronPopup(popup);  // Call to hide popup if not hovering over it
-            }
-    }, 300);  // Delay to allow moving between the node and popup
-
-    console.log('Final Node Data:', nodeData);
     return nodeData;
 }
 
 export function updateNeuronPopup(popup, x, y, data) {
-    console.log('Popup data:', data); // Add this to check the data being passed
+    // Adjust the x position based on the sidebar state and move to the right of the neuron
+    const sidebarWidth = isSidebarCollapsed ? 30 : 300; // Adjust these values as needed
+    const popupWidth = 240; // Width of the popup
+    const popupHeight = 225; // Height of the popup
+    const neuronRadius = 225; // Approximate radius of the neuron circle
+    const spacing = 15; // Space between neuron and popup
 
-    const xOffset = -60;
-    const yOffset = -50;
+    // Position to the right of the neuron
+    const adjustedX = x - sidebarWidth + neuronRadius + spacing;
+    
+    // Adjust y position to center the popup vertically with the neuron
+    const adjustedY = y - (popupHeight / 2);
 
-    popup.attr("transform", `translate(${x + xOffset},${y + yOffset})`)
+    popup.attr("transform", `translate(${adjustedX},${adjustedY})`)
         .style("display", "block");
 
-    popup.select(".popup-title")
-        .text(`${data.layerType} Node ${data.nodeIndex}`);
+    popup.select(".popup-title").text(`${data.layerType} Node ${data.nodeIndex}`);
+
+    const formatValue = (value) => {
+        if (typeof value === 'number') return value.toFixed(4);
+        if (Array.isArray(value)) {
+            const avg = d3.mean(value).toFixed(4);
+            const [min, max] = value.length > 1 ? [d3.min(value).toFixed(4), d3.max(value).toFixed(4)] : [null, null];
+            return { avg, min, max, hasMinMax: value.length > 1 };
+        }
+        return value || 'N/A';
+    };
 
     if (data.layerType === "Input") {
-        // Parse the inputValue and handle number or string
-        let inputValue = parseFloat(data.inputValue);  // Convert to a number
-        
-        if (!isNaN(inputValue)) {
-            inputValue = inputValue.toFixed(4);  // If it's a valid number, format it
-        } else {
-            inputValue = (typeof data.inputValue === 'string') ? data.inputValue : 'N/A';  // If it's a string, display it as-is
-        }
-        
-        // Update popup text for input value
-        popup.select(".popup-weight").text(`Input Value: ${inputValue}`);
-        popup.select(".popup-bias").text("");  // Clear bias field for input layer since it's not relevant
+        popup.select(".popup-weight").text(`Input Value: ${formatValue(data.inputValue)}`);
+        ["bias", "pre-activation", "activation", "gradient"].forEach(field => 
+            popup.select(`.popup-${field}`).text("")
+        );
     } else {
-        // Handle weight and bias for hidden and output layers
-        const weight = (typeof data.weight === 'number')
-            ? data.weight.toFixed(4)
-            : Array.isArray(data.weight) ? d3.mean(data.weight).toFixed(4) : 'N/A';
-    
-        const bias = (typeof data.bias === 'number')
-            ? data.bias.toFixed(4)
-            : Array.isArray(data.bias) ? d3.mean(data.bias).toFixed(4) : 'N/A';
-    
-        popup.select(".popup-weight").text(`Weight: ${weight}`);
-        popup.select(".popup-bias").text(`Bias: ${bias}`);
+        const weightInfo = formatValue(data.weight);
+        popup.select(".popup-weight")
+            .text(`Weight Avg: ${weightInfo.avg}`)
+            .append("tspan")
+            .attr("x", 30)
+            .attr("dy", weightInfo.hasMinMax ? "1.2em" : 0)
+            .text(weightInfo.hasMinMax ? `Min: ${weightInfo.min}, Max: ${weightInfo.max}` : "");
+
+        popup.select(".popup-bias").text(`Bias: ${formatValue(data.bias)}`);
+        popup.select(".popup-pre-activation").text(`Weighted Sum: ${formatValue(data.preActivation)}`);
+        popup.select(".popup-activation").text(`Activation: ${formatValue(data.activation)}`);
+        popup.select(".popup-gradient").text(`Gradient: ${formatValue(data.gradient)}`);
     }
 
-    // Pre-activation value
-    const preActivation = (typeof data.preActivation === 'number' || typeof data.preActivation === 'string') 
-        ? (typeof data.preActivation === 'number' ? data.preActivation.toFixed(4) : data.preActivation) 
-        : 'N/A';
-    popup.select(".popup-pre-activation")
-        .text(`Weighted Sum: ${preActivation}`);
-
-    // Post-activation value
-    const activation = (typeof data.activation === 'number' || typeof data.activation === 'string') 
-        ? (typeof data.activation === 'number' ? data.activation.toFixed(4) : data.activation) 
-        : 'N/A';
-    popup.select(".popup-activation")
-        .text(`Activation: ${activation}`);
-
-    // Handle gradient
-    const gradient = (typeof data.gradient === 'number' || typeof data.gradient === 'string')
-        ? (typeof data.gradient === 'number' ? data.gradient.toFixed(4) : data.gradient)
-        : Array.isArray(data.gradient) 
-        ? d3.mean(data.gradient).toFixed(4) 
-        : 'N/A';
-    popup.select(".popup-gradient")
-        .text(`Gradient: ${gradient}`);
-
-    // Sparkline for backpropagation visualization
-    if (data.backpropHistory && data.backpropHistory.length > 0) {
+    if (data.backpropHistory?.length > 0) {
         const lineGenerator = d3.line()
-            .x((d, i) => i * 20)
-            .y(d => d * -20);  // Flip the Y-axis to mimic graph direction
-
+            .x((_, i) => i * 20)
+            .y(d => d * -20);
         popup.select(".sparkline")
             .attr("d", lineGenerator(data.backpropHistory))
             .attr("transform", "translate(10, 200)");
     } else {
-        popup.select(".sparkline").attr("d", ""); // Clear sparkline if no data
+        popup.select(".sparkline").attr("d", "");
     }
+
+    popup.on("mouseenter", () => {
+        isOverPopup = true;
+        clearTimeout(hidePopupTimeout);
+    }).on("mouseleave", () => {
+        isOverPopup = false;
+        if (!isOverNode) hideNeuronPopup(popup);
+    });
 }
-
-
 export function hideNeuronPopup(popup) {
     popup.style("display", "none");
+    document.removeEventListener('mousemove', trackMouseMovement);
+}
+
+// Add this function to update the sidebar state
+export function updateSidebarState(collapsed) {
+    isSidebarCollapsed = collapsed;
 }
