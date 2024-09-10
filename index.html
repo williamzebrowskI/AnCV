@@ -11,6 +11,13 @@
     <!-- Left-side controls -->
     <div id="controls">
         <h3>Neural Network</h3>
+
+        <!-- Framework Selection Dropdown -->
+        <label for="frameworkSelect">Framework:</label>
+        <select id="frameworkSelect">
+            <option value="pytorch" selected>PyTorch</option>
+        </select>
+
         <label for="inputNodes">Input Nodes:</label>
         <input type="number" id="inputNodes" value="4" min="1">
 
@@ -77,6 +84,7 @@ const outputNodesElement = document.getElementById('outputNodes');
 const hiddenLayersContainer = document.getElementById('hiddenLayersContainer');
 const addHiddenLayerBtn = document.getElementById('addHiddenLayerBtn');
 const removeHiddenLayerBtn = document.getElementById('removeHiddenLayerBtn');
+const frameworkSelect = document.getElementById('frameworkSelect');
 
 function updateNetworkVisualization() {
     const inputNodes = parseInt(inputNodesElement.value);
@@ -89,6 +97,10 @@ function updateNetworkVisualization() {
     const layers = [inputNodes, ...hiddenLayerSizes, outputNodes];
 
     console.log('Network structure:', layers);
+
+    // Get selected framework
+    const selectedFramework = frameworkSelect.value;
+    console.log('Selected Framework:', selectedFramework);
 
     // Draw the network with updated layers
     drawNeuralNetwork(layers, null);  // Pass null for weights if not using weights here
@@ -147,6 +159,8 @@ removeHiddenLayerBtn.addEventListener('click', removeHiddenLayer);
 inputNodesElement.addEventListener('input', updateNetworkVisualization);
 outputNodesElement.addEventListener('input', updateNetworkVisualization);
 
+// Add listener to framework dropdown
+frameworkSelect.addEventListener('change', updateNetworkVisualization);
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM fully loaded. Initializing network visualization.');
