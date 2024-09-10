@@ -59,14 +59,18 @@ function handleNumberInputs(event) {
         const value = parseInt(input.value);
         const min = parseInt(input.min);
         const step = parseFloat(input.step) || 1;
-        
+
         if (target.classList.contains('decrement')) {
             input.value = Math.max(value - step, min);
         } else {
             input.value = value + step;
         }
-        
+
+        const index = input.id.replace('hiddenLayerSize', '');
+        hiddenLayers[index] = parseInt(input.value);  // Update hiddenLayers object
+
         input.dispatchEvent(new Event('input'));
+        updateNetworkVisualization();  // Ensure visualization is updated
     }
 }
 
