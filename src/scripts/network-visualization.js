@@ -21,18 +21,17 @@ export function drawNeuralNetwork(layers, weights, data) {
     const lightsGroup = svg.append("g").attr("class", "lights-group");
     const popupGroup = svg.append("g").attr("class", "popup-group");
 
-    const forwardData = data ? data.forward_data : null;
+    const forwardData = data?.forward_data;
     const layerSpacing = window.innerWidth / (layers.length + 1);
     const nodeRadius = 20;
 
-    // Create the popup
     popup = createNeuronPopup(popupGroup);
     setupPopupHover(popup);
 
-    // Create nodes
-    nodes = layers.flatMap((layerSize, layerIndex) => createLayerNodes(layerSize, layerIndex, layerSpacing, nodeRadius, svg, popup, popupGroup, forwardData, data, layers));
+    nodes = layers.flatMap((layerSize, layerIndex) => 
+        createLayerNodes(layerSize, layerIndex, layerSpacing, nodeRadius, svg, popup, popupGroup, forwardData, data, layers)
+    );
 
-    // Create links
     nodes.forEach(sourceNode => {
         if (sourceNode.layerIndex < layers.length - 1) {
             createLayerLinks(sourceNode, nodes, layers, lightsGroup, weights);
@@ -48,7 +47,7 @@ function createLayerNodes(layerSize, layerIndex, layerSpacing, nodeRadius, svg, 
         const y = ySpacing * (i + 1);
         let node = createNode(layerIndex, i, x, y, nodeRadius, svg, popup, popupGroup, layers);
         const nodeData = getNodeData(layerIndex, i, forwardData, data, layers);
-        node.updateData(nodeData);  // Update node with data
+        node.updateData(nodeData);
         return node;
     });
 }
@@ -67,7 +66,7 @@ function createLayerLinks(sourceNode, nodes, layers, lightsGroup, weights) {
     const nextLayerNodes = nodes.filter(node => node.layerIndex === sourceNode.layerIndex + 1);
 
     nextLayerNodes.forEach((targetNode, j) => {
-        let weight = getWeightForLink(sourceNode, j, weights, layers);
+        const weight = getWeightForLink(sourceNode, j, weights, layers);
 
         const line = lightsGroup.append("line")
             .attr("x1", sourceNode.x)
@@ -112,7 +111,7 @@ function setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup) {
             .attr("stroke-width", 4)
             .style("filter", "drop-shadow(0 0 10px rgba(255, 0, 85, 1))");
 
-        let weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
+        const weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
         const tooltip = lightsGroup.append("text")
             .attr("x", (sourceNode.x + targetNode.x) / 2)
             .attr("y", (sourceNode.y + targetNode.y) / 2 - 10)
@@ -126,7 +125,6 @@ function setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup) {
                 .attr("stroke", "rgba(255, 0, 85, 1)")
                 .attr("stroke-width", 2)
                 .style("filter", null);
-
             tooltip.remove();
         });
     });
@@ -138,16 +136,14 @@ export function updateNodesWithData(data, layers) {
         node.updateData(nodeData);
     });
 
-    // Rebind and update the nodes
-    const nodeSelection = d3.selectAll(".node")
+    d3.selectAll(".node")
         .data(nodes)
         .transition()
         .duration(500)
         .attr("cx", d => d.x)
         .attr("cy", d => d.y);
 
-    // Rebind and update the links
-    const linkSelection = d3.selectAll(".line")
+    d3.selectAll(".line")
         .data(links)
         .transition()
         .duration(500)
@@ -171,14 +167,12 @@ export function updateConnections(draggedNode) {
 
 export function animateDataFlow(data) {
     const svg = d3.select("svg");
-
     if (!Array.isArray(data)) data = [data];
 
     let epochIndex = 0;
     function animateEpoch() {
         if (epochIndex < data.length && !stopTraining) {
             const epochData = data[epochIndex];
-
             const forwardDuration = epochData.forward_data.forward_time * 1000;
             const backwardDuration = epochData.backward_data.backward_time * 1000;
 
@@ -187,7 +181,7 @@ export function animateDataFlow(data) {
             updateLossChart(epochData.epoch, epochData.loss);
 
             epochIndex++;
-            requestAnimationFrame(animateEpoch);  // Recursively call for continuous animation
+            requestAnimationFrame(animateEpoch);
         }
     }
 
@@ -199,11 +193,11 @@ export function animateForwardPass(forwardData, svg, duration) {
 
     forwardData.input.forEach((inputBatch, batchIndex) => {
         inputBatch.forEach((input, index) => {
-            if (index >= inputNodes) return;
-
-            const inputNode = nodes.find(node => node.layerIndex === 0 && node.i === index);
-            if (inputNode) {
-                animateLightThroughLayer(inputNode, forwardData.hidden_activation, duration * 50, svg, "forward");
+            if (index < inputNodes) {
+                const inputNode = nodes.find(node => node.layerIndex === 0 && node.i === index);
+                if (inputNode) {
+                    animateLightThroughLayer(inputNode, forwardData.hidden_activation, duration * 50, svg, "forward");
+                }
             }
         });
     });
@@ -231,7 +225,7 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
     if (nextLayerNodes.length === 0) return;
 
     nextLayerNodes.forEach((targetNode, i) => {
-        let path = svg.select(`.line-${node.layerIndex}-${i}-${targetNode.i}`);
+        let path = svg.select(`.line-${node.layerIndex}-${node.i}-${targetNode.i}`);
         if (path.empty()) {
             path = lightsGroup.append("line")
                 .attr("x1", node.x)
@@ -253,12 +247,10 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
 }
 
 function animateAlongLine(startX, startY, endX, endY, light, duration, svg, targetNode, direction) {
-    let startTime;
+    const startTime = performance.now();
 
     function step(timestamp) {
-        if (!startTime) startTime = timestamp;
         const progress = Math.min((timestamp - startTime) / duration, 1);
-
         const currentX = startX + (endX - startX) * progress;
         const currentY = startY + (endY - startY) * progress;
 
