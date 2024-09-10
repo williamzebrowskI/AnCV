@@ -101,8 +101,10 @@ export class InputNode extends Node {
     }
 
     updateData(data) {
+        // Extract the inputValue and format it
         const inputValue = data.inputValue ? data.inputValue.toFixed(4) : 'N/A';
 
+        // Only show InputValue in the popup for InputNode
         this.node.on("mouseenter", (event) => {
             handleNeuronMouseover(this.popupGroup, this.popup, event, "Input", this.nodeIndex, { inputValue });
         });
@@ -115,27 +117,30 @@ export class InputNode extends Node {
 
 export class HiddenNode extends Node {
     constructor(x, y, radius, svg, layerIndex, nodeIndex, popup, popupGroup) {
-        super(x, y, radius, svg, layerIndex, nodeIndex, popup, popupGroup); // Pass popup and popupGroup
+        super(x, y, radius, svg, layerIndex, nodeIndex, popup, popupGroup);
     }
 
     updateData(data) {
-        // Ensure to print any value regardless of data type
-        const activation = typeof data.activation !== 'undefined' 
-            ? (typeof data.activation === 'number' ? data.activation.toFixed(4) : String(data.activation)) 
-            : 'N/A';
+        const formatValue = (value) => {
+            if (typeof value === 'number') return value.toFixed(4);
+            if (Array.isArray(value)) return value; // Pass the full array
+            return typeof value !== 'undefined' ? String(value) : 'N/A';
+        };
 
-        const preActivation = typeof data.preActivation !== 'undefined' 
-            ? (typeof data.preActivation === 'number' ? data.preActivation.toFixed(4) : String(data.preActivation)) 
-            : 'N/A';
+        const popupData = {
+            activation: formatValue(data.activation),
+            preActivation: formatValue(data.preActivation),
+            weight: formatValue(data.weight), // This will now pass the full array if it's an array
+            bias: formatValue(data.bias),
+            gradient: formatValue(data.gradient),
+            layerIndex: this.layerType,
+            nodeIndex: this.nodeIndex
+        };
 
-        // Debugging both activation and preActivation values before passing to handleNeuronMouseover
-        console.log("updateData - Activation (any type):", activation);
-        console.log("updateData - Pre-Activation (any type):", preActivation);
+        console.log("Hidden Node Data:", popupData);
 
-        // Mouse event handling
         this.node.on("mouseenter", (event) => {
-            console.log("updateData - Before calling handleNeuronMouseover");
-            handleNeuronMouseover(this.popupGroup, this.popup, event, "Hidden", this.nodeIndex, { activation, preActivation });
+            handleNeuronMouseover(this.popupGroup, this.popup, event, "Hidden", this.nodeIndex, popupData);
         });
 
         this.node.on("mouseleave", (event) => {
@@ -150,10 +155,27 @@ export class OutputNode extends Node {
     }
 
     updateData(data) {
-        const outputValue = data.outputValue ? data.outputValue.toFixed(4) : 'N/A';
+        const formatValue = (value) => {
+            if (typeof value === 'number') return value.toFixed(4);
+            if (Array.isArray(value)) return value; // Pass the full array
+            return typeof value !== 'undefined' ? String(value) : 'N/A';
+        };
+
+        const popupData = {
+            outputValue: formatValue(data.outputValue),
+            activation: formatValue(data.activation),
+            preActivation: formatValue(data.preActivation),
+            weight: formatValue(data.weight), // This will now pass the full array if it's an array
+            bias: formatValue(data.bias),
+            gradient: formatValue(data.gradient),
+            error: formatValue(data.error),
+            nodeIndex: this.nodeIndex
+        };
+
+        console.log("Output Node Data:", popupData);
 
         this.node.on("mouseenter", (event) => {
-            handleNeuronMouseover(this.popupGroup, this.popup, event, "Output", this.nodeIndex, { outputValue });
+            handleNeuronMouseover(this.popupGroup, this.popup, event, "Output", this.nodeIndex, popupData);
         });
 
         this.node.on("mouseleave", (event) => {
