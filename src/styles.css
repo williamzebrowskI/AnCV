@@ -72,7 +72,7 @@ html, body {
 
 #controls button:hover {
     background-color: var(--hover-color);
-}
+} */
 
 #visualization {
     width: calc(100% - 260px);
@@ -168,4 +168,53 @@ html, body {
     font-size: 16px;
     color: rgba(255, 99, 132, 1);
     transform: rotate(45deg);
+}
+
+.number-input {
+    display: flex;
+    align-items: center;
+    background-color: var(--sidebar-bg);
+    border-radius: 10px;
+    padding: 5px;
+    box-shadow: inset 3px 3px 6px #222222, inset -3px -3px 6px #323232;
+}
+
+.number-input input {
+    width: 60px;
+    background-color: transparent;
+    border: none;
+    color: var(--text-color);
+    text-align: center;
+    font-size: 16px;
+    /* Remove default appearance */
+    -webkit-appearance: none;
+    appearance: none;
+    /* Remove spinner controls in Firefox */
+    -moz-appearance: textfield;
+}
+
+/* Remove spinner controls in Webkit browsers */
+.number-input input::-webkit-outer-spin-button,
+.number-input input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-input button {
+    background-color: var(--sidebar-bg);
+    color: var(--text-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0 5px;
+    box-shadow: 3px 3px 6px #222222, -3px -3px 6px #323232;
+}
+
+.number-input button:active {
+    box-shadow: inset 2px 2px 4px #222222, inset -2px -2px 4px #323232;
 }
