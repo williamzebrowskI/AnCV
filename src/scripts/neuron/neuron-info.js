@@ -164,6 +164,13 @@ export function getNodeData(layerIndex, i, forwardData, data, layers) {
         }
     }
 
+    // Hide the popup after a delay if not hovering over it
+    hidePopupTimeout = setTimeout(() => {
+        if (!isOverPopup) {
+            hideNeuronPopup(popup);  // Call to hide popup if not hovering over it
+            }
+    }, 300);  // Delay to allow moving between the node and popup
+
     console.log('Final Node Data:', nodeData);
     return nodeData;
 }
