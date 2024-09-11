@@ -16,7 +16,7 @@ export function createNeuronPopup(svg) {
 
     popup.append("rect")
         .attr("width", 240)
-        .attr("height", 250)
+        .attr("height", 340)  // Increased height to accommodate the activation graph
         .attr("fill", "url(#popupGradient)")
         .attr("stroke", "rgba(0, 255, 255, 1)")
         .attr("stroke-width", 2)
@@ -63,12 +63,38 @@ export function createNeuronPopup(svg) {
         .attr("stroke-width", 2)
         .style("filter", "drop-shadow(0 0 8px rgba(0, 255, 255, 1))");
 
+    // Add SVG for activation graph
+    const graphGroup = popup.append("g")
+        .attr("class", "activation-graph")
+        .attr("transform", "translate(15, 240)");
+
+    graphGroup.append("rect")
+        .attr("width", 210)
+        .attr("height", 80)
+        .attr("fill", "none")
+        .attr("stroke", "rgba(0, 255, 255, 0.5)");
+
+    graphGroup.append("path")
+        .attr("class", "activation-line")
+        .attr("fill", "none")
+        .attr("stroke", "rgba(0, 255, 255, 1)")
+        .attr("stroke-width", 2);
+
     svg.append("style").text(`
         @keyframes glowAnimation {
             0%, 100% { text-shadow: 0 0 8px rgba(255, 99, 132, 1); }
             50% { text-shadow: 0 0 12px rgba(255, 99, 132, 1); }
         }
     `);
+    popup.on("mouseenter", () => {
+        isOverPopup = true;
+        clearTimeout(hidePopupTimeout);
+    }).on("mouseleave", () => {
+        isOverPopup = false;
+        if (!isOverNode) {
+            hidePopupTimeout = setTimeout(() => hideNeuronPopup(popup), 300);
+        }
+    });
 
     return d3.select(popup.node());
 }
@@ -91,6 +117,7 @@ export function handleNeuronMouseover(popupGroup, popup, event, layerType, nodeI
 
     document.addEventListener('mousemove', trackMouseMovement);
 }
+
 export function handleNeuronMouseleave(popup, event) {
     isOverNode = false;
 
@@ -99,15 +126,8 @@ export function handleNeuronMouseleave(popup, event) {
         .style("stroke-width", "4px")
         .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");
 
-    const popupRect = popup.node().getBoundingClientRect();
-    const { clientX: mouseX, clientY: mouseY } = event;
-
-    if (isMovingTowardsPopup(mouseX, mouseY, popupRect)) {
-        hidePopupTimeout = setTimeout(() => {
-            if (!isOverPopup) hideNeuronPopup(popup);
-        }, 100);
-    } else {
-        hideNeuronPopup(popup);
+    if (!isOverPopup) {
+        hidePopupTimeout = setTimeout(() => hideNeuronPopup(popup), 300);
     }
 }
 
@@ -152,10 +172,9 @@ export function getNodeData(layerIndex, i, forwardData, data, layers) {
     return nodeData;
 }
 
-
 function setPopupOffset() {
     const popupWidth = 240; // Width of the popup
-    const popupHeight = 225; // Height of the popup
+    const popupHeight = 340; // Updated height of the popup
     const neuronRadius = 20; // Actual radius of the neuron circle
     const spacing = 15; // Space between neuron and popup
 
@@ -180,6 +199,7 @@ export function updateNeuronPopup(popup, neuronX, neuronY, data) {
         return value || 'N/A';
     };
 
+    // Update popup content
     if (data.layerType === "Input") {
         popup.select(".popup-weight").text(`Input Value: ${formatValue(data.inputValue)}`);
         ["bias", "pre-activation", "activation", "gradient"].forEach(field => 
@@ -198,8 +218,12 @@ export function updateNeuronPopup(popup, neuronX, neuronY, data) {
         popup.select(".popup-pre-activation").text(`Weighted Sum: ${formatValue(data.preActivation)}`);
         popup.select(".popup-activation").text(`Activation: ${formatValue(data.activation)}`);
         popup.select(".popup-gradient").text(`Gradient: ${formatValue(data.gradient)}`);
+
+        // Update activation graph
+        updateActivationMap(popup, data.activation);
     }
 
+    // Update sparkline if backpropHistory is available
     if (data.backpropHistory?.length > 0) {
         const lineGenerator = d3.line()
             .x((_, i) => i * 20)
@@ -210,14 +234,6 @@ export function updateNeuronPopup(popup, neuronX, neuronY, data) {
     } else {
         popup.select(".sparkline").attr("d", "");
     }
-
-    popup.on("mouseenter", () => {
-        isOverPopup = true;
-        clearTimeout(hidePopupTimeout);
-    }).on("mouseleave", () => {
-        isOverPopup = false;
-        if (!isOverNode) hideNeuronPopup(popup);
-    });
 }
 
 export function hideNeuronPopup(popup) {
@@ -225,14 +241,121 @@ export function hideNeuronPopup(popup) {
     document.removeEventListener('mousemove', trackMouseMovement);
 }
 
-// Add this function to update the sidebar state
 export function updateSidebarState(collapsed) {
     isSidebarCollapsed = collapsed;
 }
-
 
 export function updatePopupPosition(popup, neuronX, neuronY) {
     const x = neuronX + popupOffset.x;
     const y = neuronY + popupOffset.y;
     popup.attr("transform", `translate(${x},${y})`);
+}
+
+function updateActivationMap(popup, activation) {
+    const graphWidth = 210;
+    const graphHeight = 80;
+    const margin = { top: 5, right: 5, bottom: 20, left: 25 };
+    const width = graphWidth - margin.left - margin.right;
+    const height = graphHeight - margin.top - margin.bottom;
+
+    // Get existing data points
+    let activationData = popup.select(".activation-line").datum() || [];
+
+    // Add new data point if it's a valid number
+    if (typeof activation === 'number' && !isNaN(activation)) {
+        activationData.push(activation);
+    }
+
+    // Filter out any NaN or undefined values
+    activationData = activationData.filter(d => typeof d === 'number' && !isNaN(d));
+
+    // Keep only the last 50 data points
+    const maxDataPoints = 50;
+    if (activationData.length > maxDataPoints) {
+        activationData = activationData.slice(-maxDataPoints);
+    }
+
+    // Only proceed if we have valid data points
+    if (activationData.length > 0) {
+        const x = d3.scaleLinear()
+            .domain([0, activationData.length - 1])
+            .range([0, width]);
+
+        // Set y domain to accommodate GeLU's range (including small negative values)
+        const yDomain = [
+            Math.min(-0.1, d3.min(activationData)),
+            Math.max(1, d3.max(activationData))
+        ];
+
+        const y = d3.scaleLinear()
+            .domain(yDomain)
+            .range([height, 0]);
+
+        const line = d3.line()
+            .x((d, i) => x(i))
+            .y(d => y(d))
+            .curve(d3.curveMonotoneX);
+
+        const svg = popup.select(".activation-graph");
+
+        // Clear previous content
+        svg.selectAll("*").remove();
+
+        // Add X axis
+        svg.append("g")
+            .attr("transform", `translate(${margin.left},${height + margin.top})`)
+            .call(d3.axisBottom(x).ticks(5))
+            .call(g => g.select(".domain").attr("stroke", "rgba(0, 255, 255, 0.7)"))
+            .call(g => g.selectAll("text").attr("fill", "rgba(0, 255, 255, 0.7)"));
+
+        // Add Y axis
+        svg.append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`)
+            .call(d3.axisLeft(y).ticks(5))
+            .call(g => g.select(".domain").attr("stroke", "rgba(0, 255, 255, 0.7)"))
+            .call(g => g.selectAll("text").attr("fill", "rgba(0, 255, 255, 0.7)"));
+
+        // Add reference lines
+        const referenceLines = [0, 0.5, 1];
+        referenceLines.forEach(value => {
+            svg.append("line")
+                .attr("x1", margin.left)
+                .attr("x2", width + margin.left)
+                .attr("y1", y(value) + margin.top)
+                .attr("y2", y(value) + margin.top)
+                .attr("stroke", "rgba(255, 99, 132, 0.5)")
+                .attr("stroke-dasharray", "4");
+
+            svg.append("text")
+                .attr("x", 0)
+                .attr("y", y(value) + margin.top)
+                .attr("fill", "rgba(255, 99, 132, 0.7)")
+                .attr("font-size", "10px")
+                .attr("text-anchor", "start")
+                .attr("dominant-baseline", "middle")
+                .text(value.toFixed(1));
+        });
+
+        // Add the line
+        svg.append("path")
+            .datum(activationData)
+            .attr("class", "activation-line")
+            .attr("fill", "none")
+            .attr("stroke", "rgba(0, 255, 255, 1)")
+            .attr("stroke-width", 2)
+            .attr("d", line)
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Add label for GeLU activation
+        svg.append("text")
+            .attr("x", width / 2 + margin.left)
+            .attr("y", margin.top - 5)
+            .attr("text-anchor", "middle")
+            .attr("fill", "rgba(0, 255, 255, 0.7)")
+            .attr("font-size", "10px")
+            .text("Activation");
+    } else {
+        // If no valid data, clear the path
+        popup.select(".activation-line").attr("d", null);
+    }
 }
