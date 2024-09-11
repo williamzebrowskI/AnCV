@@ -1,6 +1,8 @@
+// event-handler.js
+
 import * as networkVisualization from './network-visualization.js';
 import { updateLossChart, resetLossChart, handleExpandLossDisplay } from './chart-logic.js';
-import { drawNeuralNetwork } from './network-visualization.js'; 
+import { drawNeuralNetwork, updateNodesWithData, animateDataFlow } from './network-visualization.js'; 
 
 let hiddenLayersContainer = document.getElementById('hiddenLayersContainer');
 let hiddenLayerCount = 0;
@@ -12,6 +14,8 @@ const socket = io.connect('http://127.0.0.1:5000');
     socket.on(event, () => console.log(`${event === 'connect' ? 'WebSocket connection established' : 'Disconnected from WebSocket server'}`));
 });
 
+let isNetworkInitialized = false;
+
 socket.on('training_update', data => {
     if (stopTraining) return;
 
@@ -20,8 +24,13 @@ socket.on('training_update', data => {
     const outputNodes = parseInt(document.getElementById('outputNodes').value);
     const layers = [inputSize, ...hiddenLayerSizes, outputNodes];
 
-    networkVisualization.drawNeuralNetwork(layers, data.weights_biases_data, data);
-    networkVisualization.animateDataFlow(data);
+    if (!isNetworkInitialized) {
+        drawNeuralNetwork(layers, data.weights_biases_data, data);
+        isNetworkInitialized = true;
+    } else {
+        updateNodesWithData(data, layers);
+    }
+    animateDataFlow(data);
 });
 
 const redrawNetwork = () => {
@@ -31,15 +40,11 @@ const redrawNetwork = () => {
     const layers = [inputNodes, ...hiddenLayers, outputNodes];
     
     drawNeuralNetwork(layers, null);
+    isNetworkInitialized = true;
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     redrawNetwork();
-    const inputNodes = parseInt(document.getElementById('inputNodes').value);
-    const hiddenLayers = Array.from(document.querySelectorAll('#hiddenLayersContainer input'), input => parseInt(input.value));
-    const outputNodes = parseInt(document.getElementById('outputNodes').value);
-    const layers = [inputNodes, ...hiddenLayers, outputNodes];
-    networkVisualization.drawNeuralNetwork(layers, null);
 });
 
 const handleTraining = (start) => {
@@ -83,6 +88,7 @@ document.getElementById('loadNetworkBtn').addEventListener('click', () => {
     const hiddenLayers = document.getElementById('hiddenLayers').value.split(',').map(Number);
     const outputNodes = parseInt(document.getElementById('outputNodes').value);
     networkVisualization.drawNeuralNetwork([inputNodes, ...hiddenLayers, outputNodes]);
+    isNetworkInitialized = true;
 });
 
 document.getElementById('inputNodes').addEventListener('input', redrawNetwork);
@@ -96,10 +102,12 @@ document.getElementById('resetAllBtn').addEventListener('click', () => {
     resetLossChart();
     refreshMap();
     stopTraining = true;
+    isNetworkInitialized = false;
     
     document.dispatchEvent(new Event('getHiddenLayerSizes'));
     document.addEventListener('hiddenLayerSizesResult', function handler(e) {
         networkVisualization.drawNeuralNetwork([4, ...e.detail, 1]);
+        isNetworkInitialized = true;
         document.removeEventListener('hiddenLayerSizesResult', handler);
     });
     
