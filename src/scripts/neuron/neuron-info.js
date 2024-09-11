@@ -1,9 +1,10 @@
+// neuron-info.js
+
 let isOverNode = false;
 let isOverPopup = false;
 let lastMousePosition = { x: 0, y: 0 };
 let hidePopupTimeout;
 
-// Add this variable to track the sidebar state
 let isSidebarCollapsed = false;
 
 export function createNeuronPopup(svg) {
@@ -220,6 +221,7 @@ export function updateNeuronPopup(popup, x, y, data) {
         if (!isOverNode) hideNeuronPopup(popup);
     });
 }
+
 export function hideNeuronPopup(popup) {
     popup.style("display", "none");
     document.removeEventListener('mousemove', trackMouseMovement);
