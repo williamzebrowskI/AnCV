@@ -10,6 +10,7 @@ let isOverNode = false;
 let isOverPopup = false;
 let hidePopupTimeout;
 let selectedNodeIndex = 0;
+let currentHoveredNode = null;
 
 export function drawNeuralNetwork(layers, weights, data) {
     d3.select("#visualization").html("");
@@ -134,23 +135,22 @@ export function updateNodesWithData(data, layers) {
     nodes.forEach(node => {
         const nodeData = getNodeData(node.layerIndex, node.i, data.forward_data, data, layers);
         node.updateData(nodeData);
+        
+        // If this node is currently being hovered over, update its popup
+        if (node === currentHoveredNode) {
+            updateNeuronPopup(popup, node.x, node.y, { 
+                layerType: node.layerType === 0 ? "Input" : node.layerType === layers.length - 1 ? "Output" : "Hidden", 
+                nodeIndex: node.i, 
+                ...nodeData 
+            });
+        }
     });
 
-    d3.selectAll(".node")
-        .data(nodes)
-        .transition()
-        .duration(500)
-        .attr("cx", d => d.x)
-        .attr("cy", d => d.y);
-
-    d3.selectAll(".line")
-        .data(links)
-        .transition()
-        .duration(500)
-        .attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
+    // Update link weights
+    links.forEach(link => {
+        const weight = getWeightForLink(link.source, link.target.i, data.weights_biases_data, layers);
+        link.weight = weight;
+    });
 }
 
 export function updateConnections(draggedNode) {
@@ -273,4 +273,14 @@ export function clearNetwork() {
     d3.select("#visualization").html("");
     nodes = [];
     links = [];
+}
+
+// New function to set the current hovered node
+export function setCurrentHoveredNode(node) {
+    currentHoveredNode = node;
+}
+
+// New function to clear the current hovered node
+export function clearCurrentHoveredNode() {
+    currentHoveredNode = null;
 }
