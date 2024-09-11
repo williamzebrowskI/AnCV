@@ -1,5 +1,7 @@
+// node.js
+
 import {handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup } from './neuron-info.js';
-import { updateConnections } from '../network-visualization.js';
+import { updateConnections, setCurrentHoveredNode, clearCurrentHoveredNode } from '../network-visualization.js';
 
 let isOverPopup = false; 
 
@@ -94,9 +96,11 @@ class Node {
 
     setupMouseEvents(nodeType, popupData) {
         this.node.on("mouseenter", event => {
+            setCurrentHoveredNode(this);
             handleNeuronMouseover(this.popupGroup, this.popup, event, nodeType, this.nodeIndex, popupData);
         });
         this.node.on("mouseleave", event => {
+            clearCurrentHoveredNode();
             handleNeuronMouseleave(this.popup, event);
         });
     }
