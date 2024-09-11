@@ -1,6 +1,6 @@
 // node.js
 
-import {handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup } from './neuron-info.js';
+import {handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup, updatePopupPosition } from './neuron-info.js';
 import { updateConnections, setCurrentHoveredNode, clearCurrentHoveredNode } from '../network-visualization.js';
 
 let isOverPopup = false; 
@@ -38,7 +38,7 @@ class Node {
     updateData(data) {
         console.log("Updating base node data", data);
         this.currentData = data;  // Store the current data
-        updateNeuronPopup(this.popup, this.x, this.y, data); 
+        this.updatePopupContent(data);
     }
 
     dragStarted(event) {
@@ -65,8 +65,17 @@ class Node {
 
     updatePopupOnDrag(event) {
         let nodeData = this.getNodeData();
-        updateNeuronPopup(this.popup, event.sourceEvent.pageX, event.sourceEvent.pageY, nodeData);
+        this.updatePopupPosition();
+        this.updatePopupContent(nodeData);
         this.popup.style("display", "block");
+    }
+
+    updatePopupPosition() {
+        updatePopupPosition(this.popup, this.x, this.y);
+    }
+
+    updatePopupContent(data) {
+        updateNeuronPopup(this.popup, this.x, this.y, data);
     }
 
     getNodeData() {
@@ -98,12 +107,17 @@ class Node {
     setupMouseEvents(nodeType, popupData) {
         this.node.on("mouseenter", event => {
             setCurrentHoveredNode(this);
-            handleNeuronMouseover(this.popupGroup, this.popup, event, nodeType, this.nodeIndex, popupData);
+            this.handleMouseover(event, nodeType, popupData);
         });
         this.node.on("mouseleave", event => {
             clearCurrentHoveredNode();
             handleNeuronMouseleave(this.popup, event);
         });
+    }
+
+    handleMouseover(event, nodeType, popupData) {
+        handleNeuronMouseover(this.popupGroup, this.popup, event, nodeType, this.nodeIndex, popupData);
+        this.updatePopupPosition();
     }
 }
 
