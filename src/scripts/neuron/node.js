@@ -37,6 +37,7 @@ class Node {
 
     updateData(data) {
         console.log("Updating base node data", data);
+        this.currentData = data;  // Store the current data
         updateNeuronPopup(this.popup, this.x, this.y, data); 
     }
 
@@ -73,17 +74,17 @@ class Node {
             return {
                 layerType: "Input",
                 nodeIndex: this.nodeIndex,
-                inputValue: this.inputValue || 'N/A'
+                inputValue: this.currentData?.inputValue || 'N/A'
             };
         } else {
             return {
                 layerType: this.layerType === 1 ? "Hidden" : "Output",
                 nodeIndex: this.nodeIndex,
-                weight: this.weight || 'N/A',
-                bias: this.bias || 'N/A',
-                activation: this.activation || 'N/A',
-                gradient: this.gradient || 'N/A',
-                backpropHistory: []
+                weight: this.currentData?.weight || 'N/A',
+                bias: this.currentData?.bias || 'N/A',
+                activation: this.currentData?.activation || 'N/A',
+                gradient: this.currentData?.gradient || 'N/A',
+                backpropHistory: this.currentData?.backpropHistory || []
             };
         }
     }
@@ -112,6 +113,7 @@ export class InputNode extends Node {
     }
 
     updateData(data) {
+        this.currentData = data;  // Store the current data
         const inputValue = this.formatValue(data.inputValue);
         this.setupMouseEvents("Input", { inputValue });
     }
@@ -123,6 +125,7 @@ export class HiddenNode extends Node {
     }
 
     updateData(data) {
+        this.currentData = data;  // Store the current data
         const popupData = this.formatNodeData(data);
         console.log("Hidden Node Data:", popupData);
         this.setupMouseEvents(`Hidden Layer ${this.layerIndex}`, popupData);
@@ -147,6 +150,7 @@ export class OutputNode extends Node {
     }
 
     updateData(data) {
+        this.currentData = data;  // Store the current data
         const popupData = this.formatNodeData(data);
         console.log("Output Node Data:", popupData);
         this.setupMouseEvents("Output", popupData);
