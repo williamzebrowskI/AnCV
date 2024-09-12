@@ -10,8 +10,9 @@ export function updateActivationMap(popup, activationHistory, nodeId) {
     // Sanitize the nodeId for use in class names
     const sanitizedNodeId = nodeId.replace(/\s+/g, '-');
 
-    // Use the full activation history
-    let activationData = activationHistory.filter(d => typeof d === 'number' && !isNaN(d));
+    // Extract activation values from the history
+    let activationData = activationHistory.map(entry => parseFloat(entry.activation))
+        .filter(value => !isNaN(value));
 
     console.log(`Filtered activation data:`, activationData);
 
