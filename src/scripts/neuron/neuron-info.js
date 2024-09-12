@@ -217,67 +217,89 @@ function setPopupOffset() {
 export function updateNeuronPopup(popup, neuronX, neuronY, data) {
     updatePopupPosition(popup, neuronX, neuronY);
     popup.style("display", "block");
-
     popup.select(".popup-title").text(`${data.layerType} Node ${data.nodeIndex}`);
-
+  
     const formatValue = (value) => {
-        if (typeof value === 'number') return value.toFixed(4);
-        if (Array.isArray(value)) {
-            const numericValues = value.filter(v => typeof v === 'number');
-            if (numericValues.length === 0) return 'N/A';
-            const avg = d3.mean(numericValues).toFixed(4);
-            const [min, max] = numericValues.length > 1
-                ? [d3.min(numericValues).toFixed(4), d3.max(numericValues).toFixed(4)]
-                : [null, null];
-            return { avg, min, max, hasMinMax: numericValues.length > 1 };
-        }
-        return value || 'N/A';
+      if (typeof value === 'number') return value.toFixed(4);
+      if (Array.isArray(value)) {
+        const numericValues = value.filter(v => typeof v === 'number');
+        if (numericValues.length === 0) return 'N/A';
+        const avg = d3.mean(numericValues).toFixed(4);
+        const [min, max] = numericValues.length > 1
+          ? [d3.min(numericValues).toFixed(4), d3.max(numericValues).toFixed(4)]
+          : [null, null];
+        return { avg, min, max, hasMinMax: numericValues.length > 1 };
+      }
+      return value || 'N/A';
     };
-
-    // Update popup content
+  
+    const nodeId = `${data.layerType}-${data.nodeIndex}`;
+    let history = activationHistories.get(nodeId) || [];
+  
+    // Update popup content and collect history
+    let newEntry = {};
     if (data.layerType === "Input") {
-        popup.select(".popup-weight").text(`Input Value: ${formatValue(data.inputValue)}`);
-        ["bias", "pre-activation", "activation", "gradient"].forEach(field =>
-            popup.select(`.popup-${field}`).text("")
-        );
+      const inputValue = formatValue(data.inputValue);
+      popup.select(".popup-weight").text(`Input Value: ${inputValue}`);
+      ["bias", "pre-activation", "activation", "gradient"].forEach(field =>
+        popup.select(`.popup-${field}`).text("")
+      );
+      newEntry = { inputValue };
     } else {
-        const weightInfo = formatValue(data.weight);
-        popup.select(".popup-weight")
-            .text(`Weight: ${typeof weightInfo === 'object' ? weightInfo.avg : weightInfo}`)
-            .append("tspan")
-            .attr("x", 30)
-            .attr("dy", weightInfo.hasMinMax ? "1.2em" : 0)
-            .text(weightInfo.hasMinMax ? `Min: ${weightInfo.min}, Max: ${weightInfo.max}` : "");
-
-        popup.select(".popup-bias").text(`Bias: ${formatValue(data.bias)}`);
-        popup.select(".popup-pre-activation").text(`Weighted Sum: ${formatValue(data.preActivation)}`);
-        popup.select(".popup-activation").text(`Activation: ${formatValue(data.activation)}`);
-        popup.select(".popup-gradient").text(`Gradient: ${formatValue(data.gradient)}`);
-
-        const nodeId = `${data.layerType}-${data.nodeIndex}`;
-        let history = activationHistories.get(nodeId) || [];
-        if (typeof data.activation === 'number' && !isNaN(data.activation)) {
-            history.push(data.activation);
-        }
-        if (history.length > 50) history = history.slice(-50);
-        activationHistories.set(nodeId, history);
-        
-        console.log("About to call updateActivationMap with:", { nodeId, history });
-        updateActivationMap(popup, history, nodeId);
+      const weightInfo = formatValue(data.weight);
+      const biasValue = formatValue(data.bias);
+      const preActivationValue = formatValue(data.preActivation);
+      const activationValue = formatValue(data.activation);
+      const gradientValue = formatValue(data.gradient);
+  
+      popup.select(".popup-weight")
+        .text(`Weight: ${typeof weightInfo === 'object' ? weightInfo.avg : weightInfo}`)
+        .append("tspan")
+        .attr("x", 30)
+        .attr("dy", weightInfo.hasMinMax ? "1.2em" : 0)
+        .text(weightInfo.hasMinMax ? `Min: ${weightInfo.min}, Max: ${weightInfo.max}` : "");
+      popup.select(".popup-bias").text(`Bias: ${biasValue}`);
+      popup.select(".popup-pre-activation").text(`Weighted Sum: ${preActivationValue}`);
+      popup.select(".popup-activation").text(`Activation: ${activationValue}`);
+      popup.select(".popup-gradient").text(`Gradient: ${gradientValue}`);
+  
+      newEntry = {
+        weight: typeof weightInfo === 'object' ? weightInfo.avg : weightInfo,
+        bias: biasValue,
+        preActivation: preActivationValue,
+        activation: activationValue,
+        gradient: gradientValue
+      };
     }
-
+  
+    // Add new entry to history
+    history.push(newEntry);
+  
+    // Limit history to last 50 entries
+    if (history.length > 50) history = history.slice(-50);
+    activationHistories.set(nodeId, history);
+  
+    console.log("Updated history for node:", nodeId, JSON.parse(JSON.stringify(history)));
+  
+    // Update activation map
+    if (typeof updateActivationMap === 'function') {
+      updateActivationMap(popup, history, nodeId);
+    } else {
+      console.warn("updateActivationMap function is not defined");
+    }
+  
     // Update sparkline if backpropHistory is available
     if (data.backpropHistory?.length > 0) {
-        const lineGenerator = d3.line()
-            .x((_, i) => i * 20)
-            .y(d => d * -20);
-        popup.select(".sparkline")
-            .attr("d", lineGenerator(data.backpropHistory))
-            .attr("transform", "translate(10, 200)");
+      const lineGenerator = d3.line()
+        .x((_, i) => i * 20)
+        .y(d => d * -20);
+      popup.select(".sparkline")
+        .attr("d", lineGenerator(data.backpropHistory))
+        .attr("transform", "translate(10, 200)");
     } else {
-        popup.select(".sparkline").attr("d", "");
+      popup.select(".sparkline").attr("d", "");
     }
-}
+  }
 
 export function hideNeuronPopup(popup) {
     popup.style("display", "none");
