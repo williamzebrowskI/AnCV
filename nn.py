@@ -27,7 +27,7 @@ class SimpleNeuralNetwork(nn.Module):
             x = a  # Pass the post-activation to the next layer
         
         output = self.output(x)  # Final output layer
-        return output, hidden_activations  #
+        return output, hidden_activations
 
     def train_network(self, data, epochs, learning_rate, callback):
         criterion = nn.MSELoss()
@@ -66,24 +66,24 @@ class SimpleNeuralNetwork(nn.Module):
                 forward_data = {
                     "input": inputs.tolist(),
                     "hidden_activation": [{
-                        "pre_activation": z.mean().tolist(),  # Average the batch values
-                        "post_activation": a.mean().tolist()  # Average the batch values
+                        "pre_activation": z.detach().cpu().numpy().tolist(),  # Keep all node values
+                        "post_activation": a.detach().cpu().numpy().tolist()  # Keep all node values
                     } for z, a in hidden_activations],
                     "output": outputs.tolist(),
                     "forward_time": forward_time
                 }
 
                 backward_data = {
-                    "hidden_grad": [layer.weight.grad.abs().tolist() for layer in self.hidden_layers],
-                    "output_grad": self.output.weight.grad.abs().tolist(),
+                    "hidden_grad": [layer.weight.grad.abs().detach().cpu().numpy().tolist() for layer in self.hidden_layers],
+                    "output_grad": self.output.weight.grad.abs().detach().cpu().numpy().tolist(),
                     "backward_time": backward_time
                 }
                 weights_biases_data = {
-                    "input_weights": self.hidden_layers[0].weight.detach().tolist(),
-                    "hidden_weights": [layer.weight.detach().tolist() for layer in self.hidden_layers],
-                    "hidden_biases": [layer.bias.detach().tolist() for layer in self.hidden_layers],
-                    "output_weights": self.output.weight.detach().tolist(),
-                    "output_biases": self.output.bias.detach().tolist()
+                    "input_weights": self.hidden_layers[0].weight.detach().cpu().numpy().tolist(),
+                    "hidden_weights": [layer.weight.detach().cpu().numpy().tolist() for layer in self.hidden_layers],
+                    "hidden_biases": [layer.bias.detach().cpu().numpy().tolist() for layer in self.hidden_layers],
+                    "output_weights": self.output.weight.detach().cpu().numpy().tolist(),
+                    "output_biases": self.output.bias.detach().cpu().numpy().tolist()
                 }
 
                 optimizer.step()  # Update the weights
