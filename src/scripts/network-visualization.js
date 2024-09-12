@@ -1,6 +1,6 @@
 // netowrk-visualization.js
 
-import { updateLossChart } from "./chart-logic.js";
+import { updateLossChart } from "./charts/loss-chart.js";
 import { stopTraining } from './event-handlers.js';
 import { getNodeData, handleNeuronMouseover, handleNeuronMouseleave, createNeuronPopup, updateNeuronPopup, hideNeuronPopup } from './neuron/neuron-info.js';
 import { InputNode, HiddenNode, OutputNode } from './neuron/node.js';
