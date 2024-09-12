@@ -1,115 +1,118 @@
-export function updateActivationMap(popup, activationHistory, nodeId) {
+export function updateActivationMap(popup, activationHistory, nodeId, legendX = 140, legendY = -50, isTraining = false) {
     console.log(`Updating activation map for ${nodeId}`, activationHistory);
 
-    const graphWidth = 210;
-    const graphHeight = 80;
-    const margin = { top: 5, right: 5, bottom: 20, left: 25 };
+    const graphWidth = 250;
+    const graphHeight = 120;
+    const margin = { top: -40, right: 50, bottom: 60, left: 30 };
     const width = graphWidth - margin.left - margin.right;
     const height = graphHeight - margin.top - margin.bottom;
 
     // Sanitize the nodeId for use in class names
     const sanitizedNodeId = nodeId.replace(/\s+/g, '-');
 
-    // Extract activation values from the history
-    let activationData = activationHistory.map(entry => parseFloat(entry.activation))
-        .filter(value => !isNaN(value));
+    // Prepare data
+    const data = activationHistory.map((entry, index) => ({
+        index,
+        activation: parseFloat(entry.activation)
+    })).filter(d => !isNaN(d.activation));
 
-    console.log(`Filtered activation data:`, activationData);
+    console.log(`Creating activation chart with ${data.length} data points`);
 
-    // Keep only the last 50 data points
-    const maxDataPoints = 50;
-    if (activationData.length > maxDataPoints) {
-        activationData = activationData.slice(-maxDataPoints);
-    }
+    const svg = popup.select(".activation-graph");
+    svg.selectAll("*").remove();  // Clear previous content
 
-    // Only proceed if we have valid data points
-    if (activationData.length > 0) {
-        console.log(`Creating chart with ${activationData.length} data points`);
+    // Set the viewBox to ensure the SVG scales correctly
+    svg.attr("viewBox", `0 0 ${graphWidth} ${graphHeight}`)
+       .attr("width", "100%")
+       .attr("height", "auto");
 
-        const x = d3.scaleLinear()
-            .domain([0, activationData.length - 1])
-            .range([0, width]);
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-        // Set y domain to accommodate GeLU's range (including small negative values)
-        const yDomain = [
-            Math.min(-0.1, d3.min(activationData)),
-            Math.max(1, d3.max(activationData))
-        ];
+    // X scale
+    const x = d3.scaleLinear()
+        .domain([0, Math.max(1, data.length - 1)])  // Ensure domain is always valid
+        .range([0, width]);
 
-        console.log(`Y domain:`, yDomain);
+    // Y scale
+    const y = d3.scaleLinear()
+        .domain([-1, 1])  // Typical range for activation functions
+        .range([height, 0]);
 
-        const y = d3.scaleLinear()
-            .domain(yDomain)
-            .range([height, 0]);
+    // Add X axis
+    g.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).ticks(5))
+        .call(g => g.select(".domain").attr("stroke", "rgba(255, 255, 255, 0.7)"))
+        .call(g => g.selectAll("text").attr("fill", "rgba(255, 255, 255, 0.7)"));
 
+    // Add Y axis
+    g.append("g")
+        .call(d3.axisLeft(y).ticks(5))
+        .call(g => g.select(".domain").attr("stroke", "rgba(255, 255, 255, 0.7)"))
+        .call(g => g.selectAll("text").attr("fill", "rgba(255, 255, 255, 0.7)"));
+
+    // Define color for activation
+    const activationColor = "rgba(0, 255, 255, 1)";  // Cyan
+
+    // Add the activation line if there's data
+    if (data.length > 0) {
         const line = d3.line()
-            .x((d, i) => x(i))
-            .y(d => y(d))
-            .curve(d3.curveMonotoneX);
+            .x(d => x(d.index))
+            .y(d => y(d.activation));
 
-        const svg = popup.select(".activation-graph");
-
-        // Clear previous content
-        svg.selectAll("*").remove();
-
-        // Add X axis
-        svg.append("g")
-            .attr("transform", `translate(${margin.left},${height + margin.top})`)
-            .call(d3.axisBottom(x).ticks(5))
-            .call(g => g.select(".domain").attr("stroke", "rgba(0, 255, 255, 0.7)"))
-            .call(g => g.selectAll("text").attr("fill", "rgba(0, 255, 255, 0.7)"));
-
-        // Add Y axis
-        svg.append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`)
-            .call(d3.axisLeft(y).ticks(5))
-            .call(g => g.select(".domain").attr("stroke", "rgba(0, 255, 255, 0.7)"))
-            .call(g => g.selectAll("text").attr("fill", "rgba(0, 255, 255, 0.7)"));
-
-        // Add reference lines
-        const referenceLines = [0, 0.5, 1];
-        referenceLines.forEach(value => {
-            svg.append("line")
-                .attr("x1", margin.left)
-                .attr("x2", width + margin.left)
-                .attr("y1", y(value) + margin.top)
-                .attr("y2", y(value) + margin.top)
-                .attr("stroke", "rgba(255, 99, 132, 0.5)")
-                .attr("stroke-dasharray", "4");
-
-            svg.append("text")
-                .attr("x", 0)
-                .attr("y", y(value) + margin.top)
-                .attr("fill", "rgba(255, 99, 132, 0.7)")
-                .attr("font-size", "10px")
-                .attr("text-anchor", "start")
-                .attr("dominant-baseline", "middle")
-                .text(value.toFixed(1));
-        });
-
-        // Add the line
-        svg.append("path")
-            .datum(activationData)
-            .attr("class", `activation-line activation-line-${sanitizedNodeId}`)
+        g.append("path")
+            .datum(data)
             .attr("fill", "none")
-            .attr("stroke", "rgba(0, 255, 255, 1)")
+            .attr("stroke", activationColor)
             .attr("stroke-width", 2)
-            .attr("d", line)
-            .attr("transform", `translate(${margin.left},${margin.top})`);
-
-        // Add label for activation
-        svg.append("text")
-            .attr("x", width / 2 + margin.left)
-            .attr("y", margin.top - 5)
-            .attr("text-anchor", "middle")
-            .attr("fill", "rgba(0, 255, 255, 0.7)")
-            .attr("font-size", "10px")
-            .text("Activation");
-
-        console.log(`Chart creation complete`);
-    } else {
-        console.log(`No valid data points to display`);
-        // If no valid data, clear the path
-        popup.select(`.activation-line-${sanitizedNodeId}`).attr("d", null);
+            .attr("d", line);
     }
+
+    // Add legend with adjustable position
+    const legend = svg.append("g")
+        .attr("font-family", "sans-serif")
+        .attr("font-size", 10)
+        .attr("text-anchor", "start")
+        .attr("transform", `translate(${legendX}, ${legendY})`);
+
+    legend.append("rect")
+        .attr("x", 0)
+        .attr("width", 12)
+        .attr("height", 12)
+        .attr("fill", activationColor);
+
+    legend.append("text")
+        .attr("x", 18)
+        .attr("y", 9)
+        .text("Activation")
+        .attr("fill", "rgba(255, 255, 255, 0.9)");
+
+    // Add X axis label
+    svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("x", graphWidth / 2)
+        .attr("y", graphHeight - 5)
+        .attr("font-size", 10)
+        .attr("fill", "rgba(255, 255, 255, 0.7)")
+
+    // Add Y axis label
+    svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 15)
+        .attr("x", -graphHeight / 2)
+        .attr("font-size", 10)
+        .attr("fill", "rgba(255, 255, 255, 0.7)")
+
+    // Add "No Data" or "Training..." text if there's no data
+    if (data.length === 0) {
+        g.append("text")
+            .attr("x", width / 2)
+            .attr("y", height / 2)
+            .attr("text-anchor", "middle")
+            .attr("fill", "rgba(255, 255, 255, 0.7)")
+            .text(isTraining ? "Training..." : "");
+    }
+
+    console.log(`Activation chart creation complete`);
 }
