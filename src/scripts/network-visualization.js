@@ -141,7 +141,7 @@ export function updateNodesWithData(data, layers) {
         // If this node is currently being hovered over, update its popup
         if (node === currentHoveredNode) {
             updateNeuronPopup(popup, node.x, node.y, { 
-                layerType: node.layerType === 0 ? "Input" : node.layerType === layers.length - 1 ? "Output" : "Hidden", 
+                layerType: node.layerIndex === 0 ? "Input" : node.layerIndex === layers.length - 1 ? "Output" : "Hidden", 
                 nodeIndex: node.i, 
                 ...nodeData 
             });
