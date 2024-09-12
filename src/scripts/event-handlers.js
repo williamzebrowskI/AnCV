@@ -1,7 +1,7 @@
 // event-handler.js
 
 import * as networkVisualization from './network-visualization.js';
-import { updateLossChart, resetLossChart, handleExpandLossDisplay } from './chart-logic.js';
+import { updateLossChart, resetLossChart, handleExpandLossDisplay } from './charts/loss-chart.js';
 import { drawNeuralNetwork, updateNodesWithData, animateDataFlow } from './network-visualization.js'; 
 
 let hiddenLayersContainer = document.getElementById('hiddenLayersContainer');
