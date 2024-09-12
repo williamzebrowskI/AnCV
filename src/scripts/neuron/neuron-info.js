@@ -1,5 +1,7 @@
 // neuron-info.js
 
+const activationHistories = new Map();
+
 let isOverNode = false;
 let isOverPopup = false;
 let lastMousePosition = { x: 0, y: 0 };
@@ -131,44 +133,71 @@ export function handleNeuronMouseleave(popup, event) {
     }
 }
 
-function isMovingTowardsPopup(mouseX, mouseY, popupRect) {
-    const deltaX = mouseX - lastMousePosition.x;
-    const deltaY = mouseY - lastMousePosition.y;
-
-    return (deltaX > 0 && mouseX < popupRect.left) ||
-           (deltaX < 0 && mouseX > popupRect.right) ||
-           (deltaY > 0 && mouseY < popupRect.top) ||
-           (deltaY < 0 && mouseY > popupRect.bottom);
-}
-
 const trackMouseMovement = (event) => {
     lastMousePosition = { x: event.clientX, y: event.clientY };
 };
 
 export function getNodeData(layerIndex, i, forwardData, data, layers) {
+    console.log('getNodeData called with:', { layerIndex, i, forwardData, data, layers });
+
     const nodeData = {
         weight: 'N/A', bias: 'N/A', preActivation: 'N/A',
         activation: 'N/A', gradient: 'N/A', backpropHistory: []
     };
 
-    if (layerIndex === 0 && forwardData?.input?.length > 0) {
-        const singleSample = data.epoch % forwardData.input.length;
-        nodeData.inputValue = forwardData.input[singleSample][i];
-    } else if (layerIndex > 0 && layerIndex < layers.length - 1) {
-        const hiddenActivation = forwardData?.hidden_activation?.[layerIndex - 1];
-        if (hiddenActivation) {
-            nodeData.preActivation = hiddenActivation.pre_activation;
-            nodeData.activation = hiddenActivation.post_activation;
-            nodeData.weight = data.weights_biases_data.hidden_weights[layerIndex - 1][i];
-            nodeData.bias = data.weights_biases_data.hidden_biases[layerIndex - 1][i];
-        }
-    } else if (layerIndex === layers.length - 1 && forwardData?.output_activation) {
-        nodeData.preActivation = forwardData.output_activation.pre_activation;
-        nodeData.activation = forwardData.output_activation.post_activation;
-        nodeData.weight = data.weights_biases_data.output_weights[i];
-        nodeData.bias = data.weights_biases_data.output_biases[i];
+    if (!data || !forwardData) {
+        console.log('Data or forwardData is undefined');
+        return nodeData;
     }
 
+    const currentEpoch = data.epoch;
+    const sampleIndex = 0; // We'll use the first sample in the batch for visualization
+
+    const formatValue = (value) => {
+        if (typeof value === 'number') {
+            return value.toFixed(4);
+        } else if (Array.isArray(value)) {
+            return value.map(formatValue);
+        }
+        return value;
+    };
+
+    if (layerIndex === 0) {
+        // Input layer
+        nodeData.inputValue = formatValue(forwardData.input[sampleIndex][i]);
+    } else if (layerIndex > 0 && layerIndex < layers.length - 1) {
+        // Hidden layers
+        const hiddenLayerIndex = layerIndex - 1;
+        const hiddenActivation = forwardData.hidden_activation[hiddenLayerIndex];
+        
+        if (hiddenActivation) {
+            nodeData.preActivation = formatValue(hiddenActivation.pre_activation[sampleIndex][i]);
+            nodeData.activation = formatValue(hiddenActivation.post_activation[sampleIndex][i]);
+        }
+        
+        if (data.weights_biases_data) {
+            nodeData.weight = data.weights_biases_data.hidden_weights[hiddenLayerIndex][i];
+            nodeData.bias = formatValue(data.weights_biases_data.hidden_biases[hiddenLayerIndex][i]);
+        }
+        
+        if (data.backward_data && data.backward_data.hidden_grad) {
+            nodeData.gradient = formatValue(data.backward_data.hidden_grad[hiddenLayerIndex][sampleIndex][i]);
+        }
+    } else if (layerIndex === layers.length - 1) {
+        // Output layer
+        nodeData.activation = formatValue(forwardData.output[sampleIndex][i]);
+        
+        if (data.weights_biases_data) {
+            nodeData.weight = data.weights_biases_data.output_weights[i];
+            nodeData.bias = formatValue(data.weights_biases_data.output_biases[i]);
+        }
+        
+        if (data.backward_data && data.backward_data.output_grad) {
+            nodeData.gradient = formatValue(data.backward_data.output_grad[sampleIndex][i]);
+        }
+    }
+
+    console.log(`Node data for layer ${layerIndex}, node ${i}:`, nodeData);
     return nodeData;
 }
 
@@ -192,9 +221,13 @@ export function updateNeuronPopup(popup, neuronX, neuronY, data) {
     const formatValue = (value) => {
         if (typeof value === 'number') return value.toFixed(4);
         if (Array.isArray(value)) {
-            const avg = d3.mean(value).toFixed(4);
-            const [min, max] = value.length > 1 ? [d3.min(value).toFixed(4), d3.max(value).toFixed(4)] : [null, null];
-            return { avg, min, max, hasMinMax: value.length > 1 };
+            const numericValues = value.filter(v => typeof v === 'number');
+            if (numericValues.length === 0) return 'N/A';
+            const avg = d3.mean(numericValues).toFixed(4);
+            const [min, max] = numericValues.length > 1
+                ? [d3.min(numericValues).toFixed(4), d3.max(numericValues).toFixed(4)]
+                : [null, null];
+            return { avg, min, max, hasMinMax: numericValues.length > 1 };
         }
         return value || 'N/A';
     };
@@ -202,13 +235,13 @@ export function updateNeuronPopup(popup, neuronX, neuronY, data) {
     // Update popup content
     if (data.layerType === "Input") {
         popup.select(".popup-weight").text(`Input Value: ${formatValue(data.inputValue)}`);
-        ["bias", "pre-activation", "activation", "gradient"].forEach(field => 
+        ["bias", "pre-activation", "activation", "gradient"].forEach(field =>
             popup.select(`.popup-${field}`).text("")
         );
     } else {
         const weightInfo = formatValue(data.weight);
         popup.select(".popup-weight")
-            .text(`Weight Avg: ${weightInfo.avg}`)
+            .text(`Weight: ${typeof weightInfo === 'object' ? weightInfo.avg : weightInfo}`)
             .append("tspan")
             .attr("x", 30)
             .attr("dy", weightInfo.hasMinMax ? "1.2em" : 0)
@@ -219,8 +252,16 @@ export function updateNeuronPopup(popup, neuronX, neuronY, data) {
         popup.select(".popup-activation").text(`Activation: ${formatValue(data.activation)}`);
         popup.select(".popup-gradient").text(`Gradient: ${formatValue(data.gradient)}`);
 
-        // Update activation graph
-        updateActivationMap(popup, data.activation);
+        const nodeId = `${data.layerType}-${data.nodeIndex}`;
+        let history = activationHistories.get(nodeId) || [];
+        if (typeof data.activation === 'number' && !isNaN(data.activation)) {
+            history.push(data.activation);
+        }
+        if (history.length > 50) history = history.slice(-50);
+        activationHistories.set(nodeId, history);
+        
+        console.log("About to call updateActivationMap with:", { nodeId, history });
+        updateActivationMap(popup, history, nodeId);
     }
 
     // Update sparkline if backpropHistory is available
@@ -251,23 +292,22 @@ export function updatePopupPosition(popup, neuronX, neuronY) {
     popup.attr("transform", `translate(${x},${y})`);
 }
 
-function updateActivationMap(popup, activation) {
+function updateActivationMap(popup, activationHistory, nodeId) {
+    console.log(`Updating activation map for ${nodeId}`, activationHistory);
+
     const graphWidth = 210;
     const graphHeight = 80;
     const margin = { top: 5, right: 5, bottom: 20, left: 25 };
     const width = graphWidth - margin.left - margin.right;
     const height = graphHeight - margin.top - margin.bottom;
 
-    // Get existing data points
-    let activationData = popup.select(".activation-line").datum() || [];
+    // Sanitize the nodeId for use in class names
+    const sanitizedNodeId = nodeId.replace(/\s+/g, '-');
 
-    // Add new data point if it's a valid number
-    if (typeof activation === 'number' && !isNaN(activation)) {
-        activationData.push(activation);
-    }
+    // Use the full activation history
+    let activationData = activationHistory.filter(d => typeof d === 'number' && !isNaN(d));
 
-    // Filter out any NaN or undefined values
-    activationData = activationData.filter(d => typeof d === 'number' && !isNaN(d));
+    console.log(`Filtered activation data:`, activationData);
 
     // Keep only the last 50 data points
     const maxDataPoints = 50;
@@ -277,6 +317,8 @@ function updateActivationMap(popup, activation) {
 
     // Only proceed if we have valid data points
     if (activationData.length > 0) {
+        console.log(`Creating chart with ${activationData.length} data points`);
+
         const x = d3.scaleLinear()
             .domain([0, activationData.length - 1])
             .range([0, width]);
@@ -286,6 +328,8 @@ function updateActivationMap(popup, activation) {
             Math.min(-0.1, d3.min(activationData)),
             Math.max(1, d3.max(activationData))
         ];
+
+        console.log(`Y domain:`, yDomain);
 
         const y = d3.scaleLinear()
             .domain(yDomain)
@@ -339,14 +383,14 @@ function updateActivationMap(popup, activation) {
         // Add the line
         svg.append("path")
             .datum(activationData)
-            .attr("class", "activation-line")
+            .attr("class", `activation-line activation-line-${sanitizedNodeId}`)
             .attr("fill", "none")
             .attr("stroke", "rgba(0, 255, 255, 1)")
             .attr("stroke-width", 2)
             .attr("d", line)
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
-        // Add label for GeLU activation
+        // Add label for activation
         svg.append("text")
             .attr("x", width / 2 + margin.left)
             .attr("y", margin.top - 5)
@@ -354,8 +398,11 @@ function updateActivationMap(popup, activation) {
             .attr("fill", "rgba(0, 255, 255, 0.7)")
             .attr("font-size", "10px")
             .text("Activation");
+
+        console.log(`Chart creation complete`);
     } else {
+        console.log(`No valid data points to display`);
         // If no valid data, clear the path
-        popup.select(".activation-line").attr("d", null);
+        popup.select(`.activation-line-${sanitizedNodeId}`).attr("d", null);
     }
 }
