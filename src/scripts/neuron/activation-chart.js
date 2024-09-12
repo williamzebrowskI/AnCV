@@ -1,61 +1,118 @@
-import * as d3 from 'd3';
+export function updateActivationMap(popup, activationHistory, nodeId, legendX = 140, legendY = -50, isTraining = false) {
+    console.log(`Updating activation map for ${nodeId}`, activationHistory);
 
-export function createActivationChart(popup, width, height) {
-    const margin = { top: 10, right: 10, bottom: 20, left: 25 };
-    const chartWidth = width - margin.left - margin.right;
-    const chartHeight = height - margin.top - margin.bottom;
+    const graphWidth = 250;
+    const graphHeight = 120;
+    const margin = { top: -40, right: 50, bottom: 60, left: 30 };
+    const width = graphWidth - margin.left - margin.right;
+    const height = graphHeight - margin.top - margin.bottom;
 
-    const chartGroup = popup.append("g")
-        .attr("class", "activation-chart")
-        .attr("transform", `translate(${margin.left}, ${margin.top})`);
+    // Sanitize the nodeId for use in class names
+    const sanitizedNodeId = nodeId.replace(/\s+/g, '-');
 
+    // Prepare data
+    const data = activationHistory.map((entry, index) => ({
+        index,
+        activation: parseFloat(entry.activation)
+    })).filter(d => !isNaN(d.activation));
+
+    console.log(`Creating activation chart with ${data.length} data points`);
+
+    const svg = popup.select(".activation-graph");
+    svg.selectAll("*").remove();  // Clear previous content
+
+    // Set the viewBox to ensure the SVG scales correctly
+    svg.attr("viewBox", `0 0 ${graphWidth} ${graphHeight}`)
+       .attr("width", "100%")
+       .attr("height", "auto");
+
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // X scale
     const x = d3.scaleLinear()
-        .domain([0, 19])
-        .range([0, chartWidth]);
+        .domain([0, Math.max(1, data.length - 1)])  // Ensure domain is always valid
+        .range([0, width]);
 
+    // Y scale
     const y = d3.scaleLinear()
-        .domain([0, 1])
-        .range([chartHeight, 0]);
+        .domain([-1, 1])  // Typical range for activation functions
+        .range([height, 0]);
 
-    // Add the X Axis
-    chartGroup.append("g")
-        .attr("class", "x-axis")
-        .attr("transform", `translate(0,${chartHeight})`)
-        .call(d3.axisBottom(x).ticks(5).tickFormat(d => d * 5));
+    // Add X axis
+    g.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).ticks(5))
+        .call(g => g.select(".domain").attr("stroke", "rgba(255, 255, 255, 0.7)"))
+        .call(g => g.selectAll("text").attr("fill", "rgba(255, 255, 255, 0.7)"));
 
-    // Add the Y Axis
-    chartGroup.append("g")
-        .attr("class", "y-axis")
-        .call(d3.axisLeft(y).ticks(5));
+    // Add Y axis
+    g.append("g")
+        .call(d3.axisLeft(y).ticks(5))
+        .call(g => g.select(".domain").attr("stroke", "rgba(255, 255, 255, 0.7)"))
+        .call(g => g.selectAll("text").attr("fill", "rgba(255, 255, 255, 0.7)"));
 
-    // Add the line path
-    chartGroup.append("path")
-        .attr("class", "line")
-        .attr("fill", "none")
-        .attr("stroke", "rgba(0, 255, 255, 0.8)")
-        .attr("stroke-width", 1.5);
+    // Define color for activation
+    const activationColor = "rgba(0, 255, 255, 1)";  // Cyan
 
-    // Add chart title
-    chartGroup.append("text")
-        .attr("class", "chart-title")
-        .attr("x", chartWidth / 2)
-        .attr("y", -margin.top / 2)
+    // Add the activation line if there's data
+    if (data.length > 0) {
+        const line = d3.line()
+            .x(d => x(d.index))
+            .y(d => y(d.activation));
+
+        g.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", activationColor)
+            .attr("stroke-width", 2)
+            .attr("d", line);
+    }
+
+    // Add legend with adjustable position
+    const legend = svg.append("g")
+        .attr("font-family", "sans-serif")
+        .attr("font-size", 10)
+        .attr("text-anchor", "start")
+        .attr("transform", `translate(${legendX}, ${legendY})`);
+
+    legend.append("rect")
+        .attr("x", 0)
+        .attr("width", 12)
+        .attr("height", 12)
+        .attr("fill", activationColor);
+
+    legend.append("text")
+        .attr("x", 18)
+        .attr("y", 9)
+        .text("Activation")
+        .attr("fill", "rgba(255, 255, 255, 0.9)");
+
+    // Add X axis label
+    svg.append("text")
         .attr("text-anchor", "middle")
-        .style("font-size", "10px")
-        .style("fill", "white")
-        .text("Activation History");
+        .attr("x", graphWidth / 2)
+        .attr("y", graphHeight - 5)
+        .attr("font-size", 10)
+        .attr("fill", "rgba(255, 255, 255, 0.7)")
 
-    return { x, y, chartGroup, chartWidth, chartHeight };
-}
+    // Add Y axis label
+    svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 15)
+        .attr("x", -graphHeight / 2)
+        .attr("font-size", 10)
+        .attr("fill", "rgba(255, 255, 255, 0.7)")
 
-export function updateActivationChart(chart, data) {
-    const { x, y, chartGroup, chartWidth, chartHeight } = chart;
+    // Add "No Data" or "Training..." text if there's no data
+    if (data.length === 0) {
+        g.append("text")
+            .attr("x", width / 2)
+            .attr("y", height / 2)
+            .attr("text-anchor", "middle")
+            .attr("fill", "rgba(255, 255, 255, 0.7)")
+            .text(isTraining ? "Training..." : "");
+    }
 
-    const line = d3.line()
-        .x((d, i) => x(i))
-        .y(d => y(d));
-
-    chartGroup.select(".line")
-        .datum(data)
-        .attr("d", line);
+    console.log(`Activation chart creation complete`);
 }
