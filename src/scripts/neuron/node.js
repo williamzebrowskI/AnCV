@@ -36,7 +36,7 @@ class Node {
     }
 
     updateData(data) {
-        console.log("Updating base node data", data);
+        // console.log("Updating base node data", data);
         this.currentData = data;  // Store the current data
         this.updatePopupContent(data);
     }
@@ -141,7 +141,7 @@ export class HiddenNode extends Node {
     updateData(data) {
         this.currentData = data;  // Store the current data
         const popupData = this.formatNodeData(data);
-        console.log("Hidden Node Data:", popupData);
+        console.log(`Hidden Node ${this.nodeIndex} Data:`, popupData);
         this.setupMouseEvents(`Hidden Layer ${this.layerIndex}`, popupData);
     }
 
@@ -156,6 +156,14 @@ export class HiddenNode extends Node {
             nodeIndex: this.nodeIndex
         };
     }
+
+    formatValue(value) {
+        if (typeof value === 'number') return value.toFixed(4);
+        if (Array.isArray(value)) {
+            return value.map(v => this.formatValue(v));
+        }
+        return value != null ? String(value) : 'N/A';
+    }
 }
 
 export class OutputNode extends Node {
@@ -166,7 +174,7 @@ export class OutputNode extends Node {
     updateData(data) {
         this.currentData = data;  // Store the current data
         const popupData = this.formatNodeData(data);
-        console.log("Output Node Data:", popupData);
+        // console.log("Output Node Data:", popupData);
         this.setupMouseEvents("Output", popupData);
     }
 
@@ -183,3 +191,4 @@ export class OutputNode extends Node {
         };
     }
 }
+
