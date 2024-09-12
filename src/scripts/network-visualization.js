@@ -1,3 +1,5 @@
+// netowrk-visualization.js
+
 import { updateLossChart } from "./chart-logic.js";
 import { stopTraining } from './event-handlers.js';
 import { getNodeData, handleNeuronMouseover, handleNeuronMouseleave, createNeuronPopup, updateNeuronPopup, hideNeuronPopup } from './neuron/neuron-info.js';
@@ -139,7 +141,7 @@ export function updateNodesWithData(data, layers) {
         // If this node is currently being hovered over, update its popup
         if (node === currentHoveredNode) {
             updateNeuronPopup(popup, node.x, node.y, { 
-                layerType: node.layerType === 0 ? "Input" : node.layerType === layers.length - 1 ? "Output" : "Hidden", 
+                layerType: node.layerIndex === 0 ? "Input" : node.layerIndex === layers.length - 1 ? "Output" : "Hidden", 
                 nodeIndex: node.i, 
                 ...nodeData 
             });
@@ -225,24 +227,16 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
     if (nextLayerNodes.length === 0) return;
 
     nextLayerNodes.forEach((targetNode, i) => {
-        let path = svg.select(`.line-${node.layerIndex}-${node.i}-${targetNode.i}`);
-        if (path.empty()) {
-            path = lightsGroup.append("line")
-                .attr("x1", node.x)
-                .attr("y1", node.y)
-                .attr("x2", targetNode.x)
-                .attr("y2", targetNode.y)
-                .attr("stroke", "rgba(255, 255, 255, 0.3)")
-                .attr("stroke-width", 6);
+        let line = svg.select(`.line-${node.layerIndex}-${node.i}-${targetNode.i}`);
+        if (!line.empty()) {
+            const light = lightsGroup.append("circle")
+                .attr("r", 8)
+                .attr("fill", "rgba(255, 255, 255, 0.9)")
+                .style("stroke", "rgba(200, 200, 200, 0.7)")
+                .style("stroke-width", 6);
+
+            animateAlongLine(node.x, node.y, targetNode.x, targetNode.y, light, duration, svg, targetNode, direction);
         }
-
-        const light = lightsGroup.append("circle")
-            .attr("r", 8)
-            .attr("fill", "rgba(255, 255, 255, 0.9)")
-            .style("stroke", "rgba(200, 200, 200, 0.7)")
-            .style("stroke-width", 6);
-
-        animateAlongLine(node.x, node.y, targetNode.x, targetNode.y, light, duration, svg, targetNode, direction);
     });
 }
 
@@ -275,12 +269,10 @@ export function clearNetwork() {
     links = [];
 }
 
-// New function to set the current hovered node
 export function setCurrentHoveredNode(node) {
     currentHoveredNode = node;
 }
 
-// New function to clear the current hovered node
 export function clearCurrentHoveredNode() {
     currentHoveredNode = null;
 }

@@ -1,6 +1,6 @@
 // node.js
 
-import {handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup } from './neuron-info.js';
+import {handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup, updatePopupPosition } from './neuron-info.js';
 import { updateConnections, setCurrentHoveredNode, clearCurrentHoveredNode } from '../network-visualization.js';
 
 let isOverPopup = false; 
@@ -36,8 +36,9 @@ class Node {
     }
 
     updateData(data) {
-        console.log("Updating base node data", data);
-        updateNeuronPopup(this.popup, this.x, this.y, data); 
+        // console.log("Updating base node data", data);
+        this.currentData = data;  // Store the current data
+        this.updatePopupContent(data);
     }
 
     dragStarted(event) {
@@ -64,8 +65,17 @@ class Node {
 
     updatePopupOnDrag(event) {
         let nodeData = this.getNodeData();
-        updateNeuronPopup(this.popup, event.sourceEvent.pageX, event.sourceEvent.pageY, nodeData);
+        this.updatePopupPosition();
+        this.updatePopupContent(nodeData);
         this.popup.style("display", "block");
+    }
+
+    updatePopupPosition() {
+        updatePopupPosition(this.popup, this.x, this.y);
+    }
+
+    updatePopupContent(data) {
+        updateNeuronPopup(this.popup, this.x, this.y, data);
     }
 
     getNodeData() {
@@ -73,17 +83,17 @@ class Node {
             return {
                 layerType: "Input",
                 nodeIndex: this.nodeIndex,
-                inputValue: this.inputValue || 'N/A'
+                inputValue: this.currentData?.inputValue || 'N/A'
             };
         } else {
             return {
                 layerType: this.layerType === 1 ? "Hidden" : "Output",
                 nodeIndex: this.nodeIndex,
-                weight: this.weight || 'N/A',
-                bias: this.bias || 'N/A',
-                activation: this.activation || 'N/A',
-                gradient: this.gradient || 'N/A',
-                backpropHistory: []
+                weight: this.currentData?.weight || 'N/A',
+                bias: this.currentData?.bias || 'N/A',
+                activation: this.currentData?.activation || 'N/A',
+                gradient: this.currentData?.gradient || 'N/A',
+                backpropHistory: this.currentData?.backpropHistory || []
             };
         }
     }
@@ -97,12 +107,17 @@ class Node {
     setupMouseEvents(nodeType, popupData) {
         this.node.on("mouseenter", event => {
             setCurrentHoveredNode(this);
-            handleNeuronMouseover(this.popupGroup, this.popup, event, nodeType, this.nodeIndex, popupData);
+            this.handleMouseover(event, nodeType, popupData);
         });
         this.node.on("mouseleave", event => {
             clearCurrentHoveredNode();
             handleNeuronMouseleave(this.popup, event);
         });
+    }
+
+    handleMouseover(event, nodeType, popupData) {
+        handleNeuronMouseover(this.popupGroup, this.popup, event, nodeType, this.nodeIndex, popupData);
+        this.updatePopupPosition();
     }
 }
 
@@ -112,6 +127,7 @@ export class InputNode extends Node {
     }
 
     updateData(data) {
+        this.currentData = data;  // Store the current data
         const inputValue = this.formatValue(data.inputValue);
         this.setupMouseEvents("Input", { inputValue });
     }
@@ -123,8 +139,9 @@ export class HiddenNode extends Node {
     }
 
     updateData(data) {
+        this.currentData = data;  // Store the current data
         const popupData = this.formatNodeData(data);
-        console.log("Hidden Node Data:", popupData);
+        console.log(`Hidden Node ${this.nodeIndex} Data:`, popupData);
         this.setupMouseEvents(`Hidden Layer ${this.layerIndex}`, popupData);
     }
 
@@ -139,6 +156,14 @@ export class HiddenNode extends Node {
             nodeIndex: this.nodeIndex
         };
     }
+
+    formatValue(value) {
+        if (typeof value === 'number') return value.toFixed(4);
+        if (Array.isArray(value)) {
+            return value.map(v => this.formatValue(v));
+        }
+        return value != null ? String(value) : 'N/A';
+    }
 }
 
 export class OutputNode extends Node {
@@ -147,8 +172,9 @@ export class OutputNode extends Node {
     }
 
     updateData(data) {
+        this.currentData = data;  // Store the current data
         const popupData = this.formatNodeData(data);
-        console.log("Output Node Data:", popupData);
+        // console.log("Output Node Data:", popupData);
         this.setupMouseEvents("Output", popupData);
     }
 
@@ -165,3 +191,4 @@ export class OutputNode extends Node {
         };
     }
 }
+

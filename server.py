@@ -125,4 +125,4 @@ def stop_training():
         socketio.emit('training_stopped', {"message": "Training stopped"}) 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, host='127.0.0.1', port=5000, allow_unsafe_werkzeug=True)
