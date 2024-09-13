@@ -317,6 +317,7 @@ export function updateNeuronPopup(popup, neuronX, neuronY, data) {
 
 export function hideNeuronPopup(popup) {
     popup.style("display", "none");
+    popup.currentNode = null; // Clear the current node when hiding the popup
     document.removeEventListener('mousemove', trackMouseMovement);
 }
 
