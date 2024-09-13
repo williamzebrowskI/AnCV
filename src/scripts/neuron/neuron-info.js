@@ -11,6 +11,7 @@ let hidePopupTimeout;
 
 let isSidebarCollapsed = false;
 let popupOffset = { x: 0, y: 0 };
+let currentNodeElement = null; // Added to keep track of the current node element
 
 export function createNeuronPopup(svg) {
     const popup = svg.append("g")
@@ -90,12 +91,12 @@ export function createNeuronPopup(svg) {
             50% { text-shadow: 0 0 12px rgba(255, 99, 132, 1); }
         }
     `);
-    popup.on("mouseenter", () => {
+    popup.on("mouseenter", function(event) {
         isOverPopup = true;
         clearTimeout(hidePopupTimeout);
-    }).on("mouseleave", () => {
+    }).on("mouseleave", function(event) {
         isOverPopup = false;
-        if (!isOverNode) {
+        if (!isMouseEnteringNode(event)) {
             hidePopupTimeout = setTimeout(() => hideNeuronPopup(popup), 300);
         }
     });
@@ -106,6 +107,7 @@ export function createNeuronPopup(svg) {
 export function handleNeuronMouseover(popupGroup, popup, event, layerType, nodeIndex, nodeData) {
     isOverNode = true;
     clearTimeout(hidePopupTimeout);
+    currentNodeElement = event.target; // Keep track of the current node element
 
     d3.select(event.target)
         .style("stroke", "rgba(0, 255, 255, 1)")
@@ -130,9 +132,21 @@ export function handleNeuronMouseleave(popup, event) {
         .style("stroke-width", "4px")
         .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");
 
-    if (!isOverPopup) {
+    if (!isMouseEnteringPopup(event)) {
         hidePopupTimeout = setTimeout(() => hideNeuronPopup(popup), 300);
     }
+}
+
+// Helper function to check if mouse is entering the popup
+function isMouseEnteringPopup(event) {
+    const related = event.relatedTarget;
+    return related && (related === popup.node() || popup.node().contains(related));
+}
+
+// Helper function to check if mouse is entering the node
+function isMouseEnteringNode(event) {
+    const related = event.relatedTarget;
+    return related && (related === currentNodeElement || currentNodeElement.contains(related));
 }
 
 const trackMouseMovement = (event) => {
