@@ -110,7 +110,11 @@ class Node {
             this.handleMouseover(event, nodeType, popupData);
         });
         this.node.on("mouseleave", event => {
-            clearCurrentHoveredNode();
+            const related = event.relatedTarget;
+            const isEnteringPopup = related && (related === this.popup.node() || this.popup.node().contains(related));
+            if (!isEnteringPopup) {
+                clearCurrentHoveredNode();
+            }
             handleNeuronMouseleave(this.popup, event);
         });
     }
@@ -118,6 +122,7 @@ class Node {
     handleMouseover(event, nodeType, popupData) {
         handleNeuronMouseover(this.popupGroup, this.popup, event, nodeType, this.nodeIndex, popupData);
         this.updatePopupPosition();
+        this.popup.currentNode = this; // Keep track of the node associated with the popup
     }
 }
 
@@ -191,4 +196,3 @@ export class OutputNode extends Node {
         };
     }
 }
-
