@@ -1,6 +1,6 @@
-// netowrk-visualization.js
+// network-visualization.js
 
-import { updateLossChart } from "./chart-logic.js";
+import { updateLossChart } from "./charts/loss-chart.js";
 import { stopTraining } from './event-handlers.js';
 import { getNodeData, handleNeuronMouseover, handleNeuronMouseleave, createNeuronPopup, updateNeuronPopup, hideNeuronPopup } from './neuron/neuron-info.js';
 import { InputNode, HiddenNode, OutputNode } from './neuron/node.js';
@@ -138,8 +138,8 @@ export function updateNodesWithData(data, layers) {
         const nodeData = getNodeData(node.layerIndex, node.i, data.forward_data, data, layers);
         node.updateData(nodeData);
         
-        // If this node is currently being hovered over, update its popup
-        if (node === currentHoveredNode) {
+        // If this node is currently being hovered over or its popup is displayed, update its popup
+        if (node === currentHoveredNode || (popup.currentNode && node === popup.currentNode)) {
             updateNeuronPopup(popup, node.x, node.y, { 
                 layerType: node.layerIndex === 0 ? "Input" : node.layerIndex === layers.length - 1 ? "Output" : "Hidden", 
                 nodeIndex: node.i, 
