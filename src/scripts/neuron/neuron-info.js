@@ -13,6 +13,8 @@ let isSidebarCollapsed = false;
 let popupOffset = { x: 0, y: 0 };
 let currentNodeElement = null; // Added to keep track of the current node element
 
+let tooltipDiv; // Tooltip div
+
 export function createNeuronPopup(svg) {
     const popup = svg.append("g")
         .attr("class", "neuron-popup")
@@ -50,7 +52,9 @@ export function createNeuronPopup(svg) {
         .style("font-size", "18px")
         .style("text-shadow", "0 0 8px rgba(255, 99, 132, 1)");
 
-    ["weight", "bias", "pre-activation", "activation", "gradient"].forEach((field, index) => {
+    const fields = ["weight", "bias", "pre-activation", "activation", "gradient"];
+
+    fields.forEach((field, index) => {
         popup.append("text")
             .attr("class", `popup-${field}`)
             .attr("x", 15).attr("y", 60 + index * 30)
@@ -91,6 +95,42 @@ export function createNeuronPopup(svg) {
             50% { text-shadow: 0 0 12px rgba(255, 99, 132, 1); }
         }
     `);
+
+    // Create tooltip div
+    tooltipDiv = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("text-align", "left")
+        .style("padding", "8px")
+        .style("font-size", "12px")
+        .style("background", "rgba(0, 0, 0, 0.7)")
+        .style("color", "#fff")
+        .style("border", "0px")
+        .style("border-radius", "8px")
+        .style("pointer-events", "none")
+        .style("opacity", 0);
+
+    // Definitions for the fields
+    const definitions = {
+        "weight": "Weight: The parameter that scales the input signal in a neuron.",
+        "bias": "Bias: The parameter that allows shifting the activation function.",
+        "pre-activation": "Weighted Sum: The sum of the weighted inputs plus bias before applying the activation function.",
+        "activation": "Activation: The output of the neuron after applying the activation function.",
+        "gradient": "Gradient: The derivative of the loss function with respect to the neuron's output."
+    };
+
+    // Add event listeners for tooltip
+    fields.forEach(field => {
+        popup.select(`.popup-${field}`)
+            .on("mouseover", function(event) {
+                showTooltip(event, definitions[field]);
+            })
+            .on("mousemove", function(event) {
+                moveTooltip(event);
+            })
+            .on("mouseout", hideTooltip);
+    });
+
     popup.on("mouseenter", function(event) {
         isOverPopup = true;
         clearTimeout(hidePopupTimeout);
@@ -102,6 +142,27 @@ export function createNeuronPopup(svg) {
     });
 
     return d3.select(popup.node());
+}
+
+function showTooltip(event, text) {
+    tooltipDiv.transition()
+        .duration(200)
+        .style("opacity", 0.9);
+    tooltipDiv.html(text)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+}
+
+function moveTooltip(event) {
+    tooltipDiv
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+}
+
+function hideTooltip(event) {
+    tooltipDiv.transition()
+        .duration(500)
+        .style("opacity", 0);
 }
 
 export function handleNeuronMouseover(popupGroup, popup, event, layerType, nodeIndex, nodeData) {
