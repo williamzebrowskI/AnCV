@@ -314,3 +314,62 @@ html, body {
     stroke: rgba(0, 255, 255, 0.5);
     stroke-width: 1px;
 }
+
+
+/* styles.css */
+
+/* Firing animation using CSS */
+@keyframes pulse {
+    0% {
+      r: 20;
+      fill: rgba(75, 0, 130, 1); /* Dark Purple */
+    }
+    50% {
+      r: 25;
+      fill: rgba(75, 0, 130, 0.3); /* Dark Purple with higher opacity */
+    }
+    100% {
+      r: 20;
+      fill: rgba(75, 0, 130, 1); /* Dark Purple */
+    }
+  }
+  
+  .firing {
+    animation: pulse 1s infinite;
+    stroke: rgba(255, 255, 0, 1); /* Yellow glow */
+    stroke-width: 6px;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 0, 1));
+  }
+  
+  /* Smooth transitions for visual changes */
+  circle {
+    transition: fill 0.3s, stroke 0.3s, stroke-width 0.3s;
+  }
+  
+  /* Visual indicators for InputNodes based on input values */
+  .input-low {
+    fill: rgba(75, 0, 130, 0.1); /* Dark Purple with low opacity */
+  }
+  
+  .input-medium {
+    fill: rgba(75, 0, 130, 0.3); /* Dark Purple with medium opacity */
+  }
+  
+  .input-high {
+    fill: rgba(75, 0, 130, 0.5); /* Dark Purple with high opacity */
+  }
+  
+  /* Tooltip styles */
+  .tooltip {
+    position: absolute;
+    text-align: left;
+    padding: 8px;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }

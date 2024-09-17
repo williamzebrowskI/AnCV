@@ -5,6 +5,11 @@ import { stopTraining } from './event-handlers.js';
 import { getNodeData, handleNeuronMouseover, handleNeuronMouseleave, createNeuronPopup, updateNeuronPopup, hideNeuronPopup } from './neuron/neuron-info.js';
 import { InputNode, HiddenNode, OutputNode } from './neuron/node.js';
 
+// Define color scale for continuous visual feedback
+const colorScale = d3.scaleSequential()
+    .interpolator(d3.interpolateViridis) // Choose a color scheme
+    .domain([0, 1]); // Normalize based on activation range
+
 let nodes = [];
 let links = [];
 let popup;
@@ -14,18 +19,37 @@ let hidePopupTimeout;
 let selectedNodeIndex = 0;
 let currentHoveredNode = null;
 
+/**
+ * Generates a random color that is a mix of red and blue.
+ * Ensures both red and blue components are above a certain threshold for visibility.
+ * @returns {string} - The generated RGBA color string.
+ */
+function getRandomRedBlueColor() {
+    const red = Math.floor(100 + Math.random() * 156); // 100-255
+    const blue = Math.floor(100 + Math.random() * 156); // 100-255
+    const green = 0; // Keep green at 0 for a pure red-blue mix
+    return `rgba(${red}, ${green}, ${blue}, 1)`;
+}
+
 export function drawNeuralNetwork(layers, weights, data) {
     d3.select("#visualization").html("");
 
+    // Get the dimensions of the #visualization container
+    const visualizationDiv = document.getElementById('visualization');
+    const svgWidth = visualizationDiv.clientWidth;
+    const svgHeight = visualizationDiv.clientHeight;
+
     const svg = d3.select("#visualization").append("svg")
-        .attr("width", window.innerWidth)
-        .attr("height", window.innerHeight);
+        .attr("width", svgWidth)
+        .attr("height", svgHeight)
+        .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`)
+        .attr("preserveAspectRatio", "xMidYMid meet"); // Ensures the SVG scales properly
 
     const lightsGroup = svg.append("g").attr("class", "lights-group");
     const popupGroup = svg.append("g").attr("class", "popup-group");
 
     const forwardData = data?.forward_data;
-    const layerSpacing = window.innerWidth / (layers.length + 1);
+    const layerSpacing = svgWidth / (layers.length + 1);
     const nodeRadius = 20;
 
     popup = createNeuronPopup(popupGroup);
@@ -40,10 +64,20 @@ export function drawNeuralNetwork(layers, weights, data) {
             createLayerLinks(sourceNode, nodes, layers, lightsGroup, weights);
         }
     });
+
+    // Handle window resize to make SVG responsive
+    window.addEventListener('resize', () => {
+        const newWidth = visualizationDiv.clientWidth;
+        const newHeight = visualizationDiv.clientHeight;
+        svg.attr("width", newWidth).attr("height", newHeight)
+           .attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
+        
+        // Optionally, you can redraw the network or adjust node positions here
+    });
 }
 
 function createLayerNodes(layerSize, layerIndex, layerSpacing, nodeRadius, svg, popup, popupGroup, forwardData, data, layers) {
-    const ySpacing = window.innerHeight / (layerSize + 1);
+    const ySpacing = svg.attr("height") / (layerSize + 1);
     const x = layerSpacing * (layerIndex + 1);
 
     return Array.from({ length: layerSize }, (_, i) => {
@@ -70,15 +104,17 @@ function createLayerLinks(sourceNode, nodes, layers, lightsGroup, weights) {
 
     nextLayerNodes.forEach((targetNode, j) => {
         const weight = getWeightForLink(sourceNode, j, weights, layers);
+        const randomColor = getRandomRedBlueColor(); // Generate a random mixed color
 
         const line = lightsGroup.append("line")
             .attr("x1", sourceNode.x)
             .attr("y1", sourceNode.y)
             .attr("x2", targetNode.x)
             .attr("y2", targetNode.y)
-            .attr("stroke", "rgba(255, 0, 85, 1)")
-            .attr("stroke-width", 2)
-            .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
+            .attr("stroke", randomColor) // Set the randomized stroke color
+            .attr("stroke-width", 1) // Set the stroke width to be thinner
+            .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`)
+            .attr("data-original-stroke", randomColor); // Store original color
 
         setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup);
 
@@ -109,9 +145,10 @@ function setupPopupHover(popup) {
 
 function setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup) {
     line.on("mouseenter", function (event) {
+        const originalColor = d3.select(this).attr("stroke");
         d3.select(this)
-            .attr("stroke", "rgba(255, 0, 85, 1)")
-            .attr("stroke-width", 4)
+            .attr("stroke", "rgba(255, 0, 85, 1)") // Highlight color
+            .attr("stroke-width", 2) // Thicker line on hover
             .style("filter", "drop-shadow(0 0 10px rgba(255, 0, 85, 1))");
 
         const weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
@@ -123,21 +160,47 @@ function setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup) {
             .attr("text-anchor", "middle")
             .text(`Weight: ${weightText}`);
 
+        // Store tooltip reference for removal
+        d3.select(this).attr("data-tooltip-id", `tooltip-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
+
         d3.select(this).on("mouseleave", function () {
             d3.select(this)
-                .attr("stroke", "rgba(255, 0, 85, 1)")
-                .attr("stroke-width", 2)
+                .attr("stroke", originalColor) // Revert to original color
+                .attr("stroke-width", 1) // Revert to original stroke width
                 .style("filter", null);
             tooltip.remove();
         });
     });
 }
 
-export function updateNodesWithData(data, layers) {
+
+export function updateNodesWithData(data, layers, percentile = 75) {
+    // Collect all activation values for Hidden and Output nodes
+    const activationValues = [];
+    nodes.forEach(node => {
+        if (node.layerIndex !== 0 && node.currentData && typeof node.currentData.activation === 'number') {
+            activationValues.push(node.currentData.activation);
+        }
+    });
+
+    // Define the desired percentile (e.g., top 25%)
+    const sortedActivations = activationValues.sort(d3.ascending);
+    const ACTIVATION_THRESHOLD = d3.quantile(sortedActivations, percentile / 100) || 0.5; // Fallback to 0.5 if undefined
+
+    // Determine min and max for the color scale
+    const minActivation = d3.min(activationValues) || 0;
+    const maxActivation = d3.max(activationValues) || 1;
+
+    // Update color scale with dynamic domain
+    const colorScale = d3.scaleSequential()
+        .interpolator(d3.interpolateViridis)
+        .domain([minActivation, maxActivation]);
+
+    // Update each node with the calculated threshold and color scale
     nodes.forEach(node => {
         const nodeData = getNodeData(node.layerIndex, node.i, data.forward_data, data, layers);
-        node.updateData(nodeData);
-        
+        node.updateData(nodeData, ACTIVATION_THRESHOLD, colorScale);
+
         // If this node is currently being hovered over or its popup is displayed, update its popup
         if (node === currentHoveredNode || (popup.currentNode && node === popup.currentNode)) {
             updateNeuronPopup(popup, node.x, node.y, { 
