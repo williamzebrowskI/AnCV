@@ -3,8 +3,6 @@
 import { handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup, updatePopupPosition } from './neuron-info.js';
 import { updateConnections, setCurrentHoveredNode, clearCurrentHoveredNode } from '../network-visualization.js';
 
-let isOverPopup = false; 
-
 class Node {
     constructor(x, y, radius, svg, layerType, nodeIndex, popup, popupGroup) {
         this.x = x;
@@ -36,16 +34,20 @@ class Node {
         );
     }
 
-    updateData(data) {
-        // console.log("Updating base node data", data);
-        this.currentData = data;  // Store the current data
+    updateData(data, ACTIVATION_THRESHOLD) {
+        // Store the current data
+        this.currentData = data;
         this.updatePopupContent(data);
-        this.updateFiringState(data.activation); // Update firing state based on activation
+
+        // Update firing state based on activation (only for Hidden and Output nodes)
+        if (this.layerType !== 0) { // Skip Input nodes
+            this.updateFiringState(data.activation, ACTIVATION_THRESHOLD);
+            this.updateVisualIndicators(data.activation, ACTIVATION_THRESHOLD);
+        }
     }
 
-    // New method to update firing state
-    updateFiringState(activation) {
-        const ACTIVATION_THRESHOLD = 0.5; // Define your threshold
+    // Method to update firing state with dynamic threshold
+    updateFiringState(activation, ACTIVATION_THRESHOLD) {
         if (activation >= ACTIVATION_THRESHOLD && !this.isFiring) {
             this.isFiring = true;
             this.node.classed("firing", true); // Add the 'firing' class for CSS animation
@@ -55,31 +57,17 @@ class Node {
         }
     }
 
-    // Define the firing animation (e.g., pulsing)
-    /*
-    Alternative approach using D3 transitions:
-    startFiringAnimation() {
-        this.node
-            .transition()
-            .duration(1000)
-            .ease(d3.easeCubicInOut)
-            .attr("r", this.radius * 1.3)
-            .transition()
-            .duration(1000)
-            .ease(d3.easeCubicInOut)
-            .attr("r", this.radius)
-            .on("end", () => {
-                if (this.isFiring) {
-                    this.startFiringAnimation(); // Repeat the animation if still firing
-                }
-            });
-    }
+    // Optional: Continuous visual indicators (e.g., color intensity)
+    updateVisualIndicators(activation, ACTIVATION_THRESHOLD) {
+        // Normalize activation for color scaling
+        const normalizedActivation = activation / ACTIVATION_THRESHOLD; // Adjust as needed
 
-    stopFiringAnimation() {
-        this.node.interrupt() // Interrupt ongoing transitions
-            .attr("r", this.radius); // Reset radius
+        // Define a color scale (e.g., using Viridis)
+        const color = d3.interpolateViridis(Math.min(normalizedActivation, 1)); // Clamp between 0 and 1
+
+        // Update fill color based on activation
+        this.node.style("fill", color);
     }
-    */
 
     dragStarted(event) {
         d3.select(this.node.node()).raise().attr("stroke", "black");
@@ -171,11 +159,22 @@ export class InputNode extends Node {
         super(x, y, radius, svg, 0, nodeIndex, popup, popupGroup); 
     }
 
-    updateData(data) {
+    updateData(data, ACTIVATION_THRESHOLD) {
         this.currentData = data;  // Store the current data
         const inputValue = this.formatValue(data.inputValue);
         this.setupMouseEvents("Input", { inputValue });
-        this.updateFiringState(data.inputValue); // Input nodes firing based on inputValue
+        // Implement alternative visual indicators
+        this.updateVisualIndicator(inputValue);
+    }
+
+    // Method to update visual indicators based on input value
+    updateVisualIndicator(inputValue) {
+        // Example: Adjust fill color intensity based on input value
+        // Normalize inputValue if necessary
+        // Assuming inputValue ranges between 0 and 1 for this example
+        const normalizedValue = Math.max(0, Math.min(parseFloat(inputValue), 1)); // Clamp between 0 and 1
+        const fillOpacity = 0.1 + 0.4 * normalizedValue; // Vary between 0.1 and 0.5
+        this.node.style("fill", `rgba(255, 255, 255, ${fillOpacity})`);
     }
 }
 
@@ -184,12 +183,13 @@ export class HiddenNode extends Node {
         super(x, y, radius, svg, layerIndex, nodeIndex, popup, popupGroup);
     }
 
-    updateData(data) {
+    updateData(data, ACTIVATION_THRESHOLD) {
         this.currentData = data;  // Store the current data
         const popupData = this.formatNodeData(data);
         console.log(`Hidden Node ${this.nodeIndex} Data:`, popupData);
         this.setupMouseEvents(`Hidden Layer ${this.layerIndex}`, popupData);
-        this.updateFiringState(data.activation); // Hidden nodes firing based on activation
+        this.updateFiringState(data.activation, ACTIVATION_THRESHOLD); // Hidden nodes firing based on activation
+        this.updateVisualIndicators(data.activation, ACTIVATION_THRESHOLD);
     }
 
     formatNodeData(data) {
@@ -216,12 +216,13 @@ export class OutputNode extends Node {
         super(x, y, radius, svg, totalLayers - 1, nodeIndex, popup, popupGroup);
     }
 
-    updateData(data) {
+    updateData(data, ACTIVATION_THRESHOLD) {
         this.currentData = data;  // Store the current data
         const popupData = this.formatNodeData(data);
         // console.log("Output Node Data:", popupData);
         this.setupMouseEvents("Output", popupData);
-        this.updateFiringState(data.activation); // Output nodes firing based on activation
+        this.updateFiringState(data.activation, ACTIVATION_THRESHOLD); // Output nodes firing based on activation
+        this.updateVisualIndicators(data.activation, ACTIVATION_THRESHOLD);
     }
 
     formatNodeData(data) {
