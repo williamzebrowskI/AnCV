@@ -29,15 +29,22 @@ function getRandomRedBlueColor() {
 export function drawNeuralNetwork(layers, weights, data) {
     d3.select("#visualization").html("");
 
+    // Get the dimensions of the #visualization container
+    const visualizationDiv = document.getElementById('visualization');
+    const svgWidth = visualizationDiv.clientWidth;
+    const svgHeight = visualizationDiv.clientHeight;
+
     const svg = d3.select("#visualization").append("svg")
-        .attr("width", window.innerWidth)
-        .attr("height", window.innerHeight);
+        .attr("width", svgWidth)
+        .attr("height", svgHeight)
+        .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`)
+        .attr("preserveAspectRatio", "xMidYMid meet"); // Ensures the SVG scales properly
 
     const lightsGroup = svg.append("g").attr("class", "lights-group");
     const popupGroup = svg.append("g").attr("class", "popup-group");
 
     const forwardData = data?.forward_data;
-    const layerSpacing = window.innerWidth / (layers.length + 1);
+    const layerSpacing = svgWidth / (layers.length + 1);
     const nodeRadius = 20;
 
     popup = createNeuronPopup(popupGroup);
@@ -52,10 +59,20 @@ export function drawNeuralNetwork(layers, weights, data) {
             createLayerLinks(sourceNode, nodes, layers, lightsGroup, weights);
         }
     });
+
+    // Handle window resize to make SVG responsive
+    window.addEventListener('resize', () => {
+        const newWidth = visualizationDiv.clientWidth;
+        const newHeight = visualizationDiv.clientHeight;
+        svg.attr("width", newWidth).attr("height", newHeight)
+           .attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
+        
+        // Optionally, you can redraw the network or adjust node positions here
+    });
 }
 
 function createLayerNodes(layerSize, layerIndex, layerSpacing, nodeRadius, svg, popup, popupGroup, forwardData, data, layers) {
-    const ySpacing = window.innerHeight / (layerSize + 1);
+    const ySpacing = svg.attr("height") / (layerSize + 1);
     const x = layerSpacing * (layerIndex + 1);
 
     return Array.from({ length: layerSize }, (_, i) => {
