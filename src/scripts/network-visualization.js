@@ -14,6 +14,18 @@ let hidePopupTimeout;
 let selectedNodeIndex = 0;
 let currentHoveredNode = null;
 
+/**
+ * Generates a random color that is a mix of red and blue.
+ * Ensures both red and blue components are above a certain threshold for visibility.
+ * @returns {string} - The generated RGBA color string.
+ */
+function getRandomRedBlueColor() {
+    const red = Math.floor(100 + Math.random() * 156); // 100-255
+    const blue = Math.floor(100 + Math.random() * 156); // 100-255
+    const green = 0; // Keep green at 0 for a pure red-blue mix
+    return `rgba(${red}, ${green}, ${blue}, 1)`;
+}
+
 export function drawNeuralNetwork(layers, weights, data) {
     d3.select("#visualization").html("");
 
@@ -70,15 +82,17 @@ function createLayerLinks(sourceNode, nodes, layers, lightsGroup, weights) {
 
     nextLayerNodes.forEach((targetNode, j) => {
         const weight = getWeightForLink(sourceNode, j, weights, layers);
+        const randomColor = getRandomRedBlueColor(); // Generate a random mixed color
 
         const line = lightsGroup.append("line")
             .attr("x1", sourceNode.x)
             .attr("y1", sourceNode.y)
             .attr("x2", targetNode.x)
             .attr("y2", targetNode.y)
-            .attr("stroke", "rgba(255, 0, 85, 1)")
-            .attr("stroke-width", 2)
-            .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
+            .attr("stroke", randomColor) // Set the randomized stroke color
+            .attr("stroke-width", 1) // Set the stroke width to be thinner
+            .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`)
+            .attr("data-original-stroke", randomColor); // Store original color
 
         setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup);
 
@@ -109,9 +123,10 @@ function setupPopupHover(popup) {
 
 function setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup) {
     line.on("mouseenter", function (event) {
+        const originalColor = d3.select(this).attr("stroke");
         d3.select(this)
-            .attr("stroke", "rgba(255, 0, 85, 1)")
-            .attr("stroke-width", 4)
+            .attr("stroke", "rgba(255, 0, 85, 1)") // Highlight color
+            .attr("stroke-width", 2) // Thicker line on hover
             .style("filter", "drop-shadow(0 0 10px rgba(255, 0, 85, 1))");
 
         const weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
@@ -123,10 +138,13 @@ function setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup) {
             .attr("text-anchor", "middle")
             .text(`Weight: ${weightText}`);
 
+        // Store tooltip reference for removal
+        d3.select(this).attr("data-tooltip-id", `tooltip-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`);
+
         d3.select(this).on("mouseleave", function () {
             d3.select(this)
-                .attr("stroke", "rgba(255, 0, 85, 1)")
-                .attr("stroke-width", 2)
+                .attr("stroke", originalColor) // Revert to original color
+                .attr("stroke-width", 1) // Revert to original stroke width
                 .style("filter", null);
             tooltip.remove();
         });
