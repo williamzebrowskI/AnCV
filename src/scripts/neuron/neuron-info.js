@@ -1,6 +1,6 @@
 // neuron-info.js
 
-import { updateActivationMap } from "./activation-chart.js"
+// import { updateActivationMap } from "./activation-chart.js"
 
 const activationHistories = new Map();
 
@@ -136,7 +136,7 @@ export function createNeuronPopup(svg) {
         clearTimeout(hidePopupTimeout);
     }).on("mouseleave", function(event) {
         isOverPopup = false;
-        if (!isMouseEnteringNode(event)) {
+        if (!isOverNode) {
             hidePopupTimeout = setTimeout(() => hideNeuronPopup(popup), 300);
         }
     });
@@ -356,12 +356,12 @@ export function updateNeuronPopup(popup, neuronX, neuronY, data) {
   
     console.log("Updated history for node:", nodeId, JSON.parse(JSON.stringify(history)));
   
-    // Update activation map
-    if (typeof updateActivationMap === 'function') {
-      updateActivationMap(popup, history, nodeId);
-    } else {
-      console.warn("updateActivationMap function is not defined");
-    }
+    // // Update activation map
+    // if (typeof updateActivationMap === 'function') {
+    //   updateActivationMap(popup, history, nodeId);
+    // } else {
+    //   console.warn("updateActivationMap function is not defined");
+    // }
   
     // Update sparkline if backpropHistory is available
     if (data.backpropHistory?.length > 0) {
