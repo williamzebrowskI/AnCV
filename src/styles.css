@@ -316,6 +316,9 @@ html, body {
 }
 
 
+/* styles.css */
+
+/* Firing animation using CSS */
 @keyframes pulse {
     0% {
         r: 20;
@@ -338,7 +341,35 @@ html, body {
     filter: drop-shadow(0 0 20px rgba(255, 255, 0, 1));
 }
 
-/* Optional: Smooth transition for firing state */
+/* Smooth transitions for visual changes */
 circle {
-    transition: stroke 0.3s, stroke-width 0.3s, fill 0.3s;
+    transition: fill 0.3s, stroke 0.3s, stroke-width 0.3s;
+}
+
+/* Visual indicators for InputNodes based on input values */
+.input-low {
+    fill: rgba(255, 255, 255, 0.1);
+}
+
+.input-medium {
+    fill: rgba(255, 255, 255, 0.3);
+}
+
+.input-high {
+    fill: rgba(255, 255, 255, 0.5);
+}
+
+/* Tooltip styles */
+.tooltip {
+    position: absolute;
+    text-align: left;
+    padding: 8px;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
 }
