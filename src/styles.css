@@ -314,3 +314,34 @@ html, body {
     stroke: rgba(0, 255, 255, 0.5);
     stroke-width: 1px;
 }
+
+/* Add this to your CSS file */
+
+/* Add this to your CSS file */
+
+@keyframes pulse {
+    0% {
+        r: 20;
+        fill: rgba(255, 255, 255, 0.1);
+    }
+    50% {
+        r: 25;
+        fill: rgba(255, 255, 255, 0.3);
+    }
+    100% {
+        r: 20;
+        fill: rgba(255, 255, 255, 0.1);
+    }
+}
+
+.firing {
+    animation: pulse 1s infinite;
+    stroke: rgba(255, 255, 0, 1); /* Yellow glow */
+    stroke-width: 6px;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 0, 1));
+}
+
+/* Optional: Smooth transition for firing state */
+circle {
+    transition: stroke 0.3s, stroke-width 0.3s, fill 0.3s;
+}
