@@ -1,7 +1,5 @@
 // neuron-info.js
 
-// import { updateActivationMap } from "./activation-chart.js"
-
 const activationHistories = new Map();
 
 let isOverNode = false;
@@ -232,13 +230,13 @@ export function handleNeuronMouseleave(popup, event) {
     .style("stroke-width", "4px")
     .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");
 
-  if (!isMouseEnteringPopup(event)) {
+  if (!isMouseEnteringPopup(event, popup)) {
     hidePopupTimeout = setTimeout(() => hideNeuronPopup(popup), 300);
   }
 }
 
 // Helper function to check if mouse is entering the popup
-function isMouseEnteringPopup(event) {
+function isMouseEnteringPopup(event, popup) {
   const related = event.relatedTarget;
   return related && (related === popup.node() || popup.node().contains(related));
 }
@@ -246,7 +244,10 @@ function isMouseEnteringPopup(event) {
 // Helper function to check if mouse is entering the node
 function isMouseEnteringNode(event) {
   const related = event.relatedTarget;
-  return related && (related === currentNodeElement || currentNodeElement.contains(related));
+  return (
+    related &&
+    (related === currentNodeElement || currentNodeElement.contains(related))
+  );
 }
 
 const trackMouseMovement = (event) => {
