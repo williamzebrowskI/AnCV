@@ -322,15 +322,15 @@ html, body {
 @keyframes pulse {
     0% {
       r: 20;
-      fill: rgba(255, 255, 255, 0.1);
+      fill: rgba(75, 0, 130, 1); /* Dark Purple */
     }
     50% {
       r: 25;
-      fill: rgba(255, 255, 255, 0.3);
+      fill: rgba(75, 0, 130, 0.3); /* Dark Purple with higher opacity */
     }
     100% {
       r: 20;
-      fill: rgba(255, 255, 255, 0.1);
+      fill: rgba(75, 0, 130, 1); /* Dark Purple */
     }
   }
   
@@ -348,15 +348,15 @@ html, body {
   
   /* Visual indicators for InputNodes based on input values */
   .input-low {
-    fill: rgba(255, 255, 255, 0.1);
+    fill: rgba(75, 0, 130, 0.1); /* Dark Purple with low opacity */
   }
   
   .input-medium {
-    fill: rgba(255, 255, 255, 0.3);
+    fill: rgba(75, 0, 130, 0.3); /* Dark Purple with medium opacity */
   }
   
   .input-high {
-    fill: rgba(255, 255, 255, 0.5);
+    fill: rgba(75, 0, 130, 0.5); /* Dark Purple with high opacity */
   }
   
   /* Tooltip styles */
