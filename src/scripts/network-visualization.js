@@ -5,10 +5,28 @@ import { stopTraining } from './event-handlers.js';
 import { getNodeData, handleNeuronMouseover, handleNeuronMouseleave, createNeuronPopup, updateNeuronPopup, hideNeuronPopup } from './neuron/neuron-info.js';
 import { InputNode, HiddenNode, OutputNode } from './neuron/node.js';
 
-// Define color scale for continuous visual feedback
+// === Color Definitions ===
+const COLOR_SCALE_INTERPOLATOR = d3.interpolateViridis; // Color scale interpolator for activations
+const COLOR_SCALE_DOMAIN_DEFAULT = [0, 1]; // Default domain for color scale
+
+const LINK_HOVER_STROKE = "rgba(255, 0, 85, 1)"; // Highlight color for links on hover
+const LINK_HOVER_FILTER = "drop-shadow(0 0 10px rgba(255, 0, 85, 1))"; // Drop shadow for hovered links
+const TOOLTIP_TEXT_COLOR = "white"; // Text color for tooltips
+const TOOLTIP_FONT_SIZE = "14px"; // Font size for tooltips
+const TOOLTIP_TEXT_ANCHOR = "middle"; // Text anchor for tooltips
+
+const LIGHT_FILL_COLOR = "rgba(255, 255, 255, 0.9)"; // Fill color for animated lights
+const LIGHT_STROKE_COLOR = "rgba(200, 200, 200, 0.7)"; // Stroke color for animated lights
+const LIGHT_STROKE_WIDTH = 6; // Stroke width for animated lights
+
+const LINK_DEFAULT_STROKE_WIDTH = 1; // Default stroke width for links
+const LINK_HOVER_STROKE_WIDTH = 2; // Stroke width for links on hover
+
+// ============================
+
 const colorScale = d3.scaleSequential()
-    .interpolator(d3.interpolateViridis) // Choose a color scheme
-    .domain([0, 1]); // Normalize based on activation range
+    .interpolator(COLOR_SCALE_INTERPOLATOR) // Choose a color scheme
+    .domain(COLOR_SCALE_DOMAIN_DEFAULT); // Normalize based on activation range
 
 let nodes = [];
 let links = [];
@@ -112,7 +130,7 @@ function createLayerLinks(sourceNode, nodes, layers, lightsGroup, weights) {
             .attr("x2", targetNode.x)
             .attr("y2", targetNode.y)
             .attr("stroke", randomColor) // Set the randomized stroke color
-            .attr("stroke-width", 1) // Set the stroke width to be thinner
+            .attr("stroke-width", LINK_DEFAULT_STROKE_WIDTH) // Use default stroke width variable
             .attr("class", `line-${sourceNode.layerIndex}-${sourceNode.i}-${targetNode.i}`)
             .attr("data-original-stroke", randomColor); // Store original color
 
@@ -147,17 +165,17 @@ function setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup) {
     line.on("mouseenter", function (event) {
         const originalColor = d3.select(this).attr("stroke");
         d3.select(this)
-            .attr("stroke", "rgba(255, 0, 85, 1)") // Highlight color
-            .attr("stroke-width", 2) // Thicker line on hover
-            .style("filter", "drop-shadow(0 0 10px rgba(255, 0, 85, 1))");
+            .attr("stroke", LINK_HOVER_STROKE) // Use hover stroke color variable
+            .attr("stroke-width", LINK_HOVER_STROKE_WIDTH) // Use hover stroke width variable
+            .style("filter", LINK_HOVER_FILTER); // Use hover filter variable
 
         const weightText = weight !== null && !isNaN(weight) ? Number(weight).toFixed(4) : 'N/A';
         const tooltip = lightsGroup.append("text")
             .attr("x", (sourceNode.x + targetNode.x) / 2)
             .attr("y", (sourceNode.y + targetNode.y) / 2 - 10)
-            .attr("fill", "white")
-            .attr("font-size", "14px")
-            .attr("text-anchor", "middle")
+            .attr("fill", TOOLTIP_TEXT_COLOR) // Use tooltip text color variable
+            .attr("font-size", TOOLTIP_FONT_SIZE) // Use tooltip font size variable
+            .attr("text-anchor", TOOLTIP_TEXT_ANCHOR) // Use tooltip text anchor variable
             .text(`Weight: ${weightText}`);
 
         // Store tooltip reference for removal
@@ -166,13 +184,12 @@ function setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup) {
         d3.select(this).on("mouseleave", function () {
             d3.select(this)
                 .attr("stroke", originalColor) // Revert to original color
-                .attr("stroke-width", 1) // Revert to original stroke width
+                .attr("stroke-width", LINK_DEFAULT_STROKE_WIDTH) // Revert to default stroke width variable
                 .style("filter", null);
             tooltip.remove();
         });
     });
 }
-
 
 export function updateNodesWithData(data, layers, percentile = 75) {
     // Collect all activation values for Hidden and Output nodes
@@ -192,14 +209,14 @@ export function updateNodesWithData(data, layers, percentile = 75) {
     const maxActivation = d3.max(activationValues) || 1;
 
     // Update color scale with dynamic domain
-    const colorScale = d3.scaleSequential()
-        .interpolator(d3.interpolateViridis)
+    const dynamicColorScale = d3.scaleSequential()
+        .interpolator(COLOR_SCALE_INTERPOLATOR)
         .domain([minActivation, maxActivation]);
 
     // Update each node with the calculated threshold and color scale
     nodes.forEach(node => {
         const nodeData = getNodeData(node.layerIndex, node.i, data.forward_data, data, layers);
-        node.updateData(nodeData, ACTIVATION_THRESHOLD, colorScale);
+        node.updateData(nodeData, ACTIVATION_THRESHOLD, dynamicColorScale);
 
         // If this node is currently being hovered over or its popup is displayed, update its popup
         if (node === currentHoveredNode || (popup.currentNode && node === popup.currentNode)) {
@@ -294,9 +311,9 @@ export function animateLightThroughLayer(node, nextLayerData, duration, svg, dir
         if (!line.empty()) {
             const light = lightsGroup.append("circle")
                 .attr("r", 8)
-                .attr("fill", "rgba(255, 255, 255, 0.9)")
-                .style("stroke", "rgba(200, 200, 200, 0.7)")
-                .style("stroke-width", 6);
+                .attr("fill", LIGHT_FILL_COLOR) // Use light fill color variable
+                .style("stroke", LIGHT_STROKE_COLOR) // Use light stroke color variable
+                .style("stroke-width", LIGHT_STROKE_WIDTH); // Use light stroke width variable
 
             animateAlongLine(node.x, node.y, targetNode.x, targetNode.y, light, duration, svg, targetNode, direction);
         }

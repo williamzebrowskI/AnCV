@@ -1,5 +1,30 @@
 // neuron-info.js
 
+// === Color Definitions ===
+const POPUP_FILL_GRADIENT_START = "#0f0f0f"; // Start color for popup gradient
+const POPUP_FILL_GRADIENT_END = "#2f2f2f"; // End color for popup gradient
+
+const POPUP_BORDER_COLOR = "rgba(0, 255, 255, 1)"; // Cyan border for popup
+const POPUP_TITLE_COLOR = "rgba(255, 99, 132, 1)"; // Pink color for popup title text
+const POPUP_TITLE_TEXT_SHADOW = "0 0 8px rgba(255, 99, 132, 1)"; // Text shadow for popup title
+
+const POPUP_FIELD_TEXT_COLOR = "#ffffff"; // White color for popup field texts
+const POPUP_FIELD_TEXT_SHADOW = "0 0 6px rgba(255, 99, 132, 1)"; // Text shadow for popup fields
+const POPUP_FIELD_ANIMATION = "glowAnimation 2s infinite"; // Animation for popup fields
+
+const SPARKLINE_STROKE_COLOR = "rgba(0, 255, 255, 1)"; // Cyan stroke for sparkline
+const SPARKLINE_FILTER = "drop-shadow(0 0 8px rgba(0, 255, 255, 1))"; // Drop shadow for sparkline
+
+const ACTIVATION_GRAPH_RECT_STROKE = "rgba(0, 255, 255, 0.5)"; // Semi-transparent cyan stroke for activation graph rectangle
+const ACTIVATION_GRAPH_LINE_STROKE = "rgba(0, 255, 255, 1)"; // Cyan stroke for activation graph line
+
+const GLOW_ANIMATION_START = "0 0 8px rgba(255, 99, 132, 1)"; // Text shadow at 0% and 100% of glow animation
+const GLOW_ANIMATION_MID = "0 0 12px rgba(255, 99, 132, 1)"; // Text shadow at 50% of glow animation
+
+const TOOLTIP_BACKGROUND_COLOR = "rgba(0, 0, 0, 0.7)"; // Dark semi-transparent background for tooltip
+const TOOLTIP_TEXT_COLOR = "#fff"; // White text color for tooltip
+// ============================
+
 const activationHistories = new Map();
 
 let isOverNode = false;
@@ -25,11 +50,11 @@ export function createNeuronPopup(svg) {
     .attr("width", 240)
     .attr("height", 340) // Increased height to accommodate the activation graph
     .attr("fill", "url(#popupGradient)")
-    .attr("stroke", "rgba(0, 255, 255, 1)")
+    .attr("stroke", POPUP_BORDER_COLOR) // Use popup border color variable
     .attr("stroke-width", 2)
     .attr("rx", 15)
     .attr("ry", 15)
-    .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");
+    .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))"); // Retain the original filter
 
   svg
     .append("defs")
@@ -41,8 +66,8 @@ export function createNeuronPopup(svg) {
     .attr("y2", "100%")
     .selectAll("stop")
     .data([
-      { offset: "0%", color: "#0f0f0f" },
-      { offset: "100%", color: "#2f2f2f" },
+      { offset: "0%", color: POPUP_FILL_GRADIENT_START }, // Use gradient start color variable
+      { offset: "100%", color: POPUP_FILL_GRADIENT_END }, // Use gradient end color variable
     ])
     .enter()
     .append("stop")
@@ -54,11 +79,11 @@ export function createNeuronPopup(svg) {
     .attr("class", "popup-title")
     .attr("x", 15)
     .attr("y", 30)
-    .attr("fill", "rgba(255, 99, 132, 1)")
+    .attr("fill", POPUP_TITLE_COLOR) // Use popup title color variable
     .style("font-family", "'Orbitron', sans-serif")
     .style("font-weight", "bold")
     .style("font-size", "18px")
-    .style("text-shadow", "0 0 8px rgba(255, 99, 132, 1)");
+    .style("text-shadow", POPUP_TITLE_TEXT_SHADOW); // Use popup title text shadow variable
 
   const fields = ["weight", "bias", "pre-activation", "activation", "gradient"];
 
@@ -68,20 +93,20 @@ export function createNeuronPopup(svg) {
       .attr("class", `popup-${field}`)
       .attr("x", 15)
       .attr("y", 60 + index * 30)
-      .attr("fill", "#ffffff")
+      .attr("fill", POPUP_FIELD_TEXT_COLOR) // Use popup field text color variable
       .style("font-family", "'Orbitron', sans-serif")
       .style("font-size", "14px")
-      .style("text-shadow", "0 0 6px rgba(255, 99, 132, 1)")
-      .style("animation", "glowAnimation 2s infinite");
+      .style("text-shadow", POPUP_FIELD_TEXT_SHADOW) // Use popup field text shadow variable
+      .style("animation", POPUP_FIELD_ANIMATION); // Use popup field animation variable
   });
 
   popup
     .append("path")
     .attr("class", "sparkline")
     .attr("fill", "none")
-    .attr("stroke", "rgba(0, 255, 255, 1)")
+    .attr("stroke", SPARKLINE_STROKE_COLOR) // Use sparkline stroke color variable
     .attr("stroke-width", 2)
-    .style("filter", "drop-shadow(0 0 8px rgba(0, 255, 255, 1))");
+    .style("filter", SPARKLINE_FILTER); // Use sparkline filter color variable
 
   // Add SVG for activation graph
   const graphGroup = popup
@@ -94,21 +119,21 @@ export function createNeuronPopup(svg) {
     .attr("width", 210)
     .attr("height", 80)
     .attr("fill", "none")
-    .attr("stroke", "rgba(0, 255, 255, 0.5)");
+    .attr("stroke", ACTIVATION_GRAPH_RECT_STROKE); // Use activation graph rect stroke color variable
 
   graphGroup
     .append("path")
     .attr("class", "activation-line")
     .attr("fill", "none")
-    .attr("stroke", "rgba(0, 255, 255, 1)")
+    .attr("stroke", ACTIVATION_GRAPH_LINE_STROKE) // Use activation graph line stroke color variable
     .attr("stroke-width", 2);
 
   svg.append("style").text(`
         @keyframes glowAnimation {
-            0%, 100% { text-shadow: 0 0 8px rgba(255, 99, 132, 1); }
-            50% { text-shadow: 0 0 12px rgba(255, 99, 132, 1); }
+            0%, 100% { text-shadow: ${GLOW_ANIMATION_START}; }
+            50% { text-shadow: ${GLOW_ANIMATION_MID}; }
         }
-    `);
+    `); // Use glow animation variables
 
   // Create tooltip div
   tooltipDiv = d3
@@ -119,8 +144,8 @@ export function createNeuronPopup(svg) {
     .style("text-align", "left")
     .style("padding", "8px")
     .style("font-size", "12px")
-    .style("background", "rgba(0, 0, 0, 0.7)")
-    .style("color", "#fff")
+    .style("background", TOOLTIP_BACKGROUND_COLOR) // Use tooltip background color variable
+    .style("color", TOOLTIP_TEXT_COLOR) // Use tooltip text color variable
     .style("border", "0px")
     .style("border-radius", "8px")
     .style("pointer-events", "none")
@@ -203,9 +228,9 @@ export function handleNeuronMouseover(
   currentNodeElement = event.target; // Keep track of the current node element
 
   d3.select(event.target)
-    .style("stroke", "rgba(0, 255, 255, 1)")
+    .style("stroke", POPUP_BORDER_COLOR) // Use popup border color variable
     .style("stroke-width", "6px")
-    .style("filter", "drop-shadow(0 0 20px rgba(0, 255, 255, 1))");
+    .style("filter", "drop-shadow(0 0 20px rgba(0, 255, 255, 1))"); // Retain the original filter
 
   setPopupOffset();
 
@@ -226,9 +251,9 @@ export function handleNeuronMouseleave(popup, event) {
   isOverNode = false;
 
   d3.select(event.target)
-    .style("stroke", "rgba(0, 255, 255, 1)")
+    .style("stroke", POPUP_BORDER_COLOR) // Use popup border color variable
     .style("stroke-width", "4px")
-    .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");
+    .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))"); // Retain the original filter
 
   if (!isMouseEnteringPopup(event, popup)) {
     hidePopupTimeout = setTimeout(() => hideNeuronPopup(popup), 300);
@@ -463,3 +488,12 @@ export function updatePopupPosition(popup, neuronX, neuronY) {
 
 // Export isOverPopup for use in node.js
 export { isOverPopup };
+
+// === Additional Color Variables ===
+const HANDLE_MOUSEOVER_STROKE = POPUP_BORDER_COLOR; // Reuse popup border color for node hover stroke
+const HANDLE_MOUSEOVER_STROKE_WIDTH = "6px"; // Stroke width on mouseover
+const HANDLE_MOUSEOVER_FILTER = "drop-shadow(0 0 20px rgba(0, 255, 255, 1))"; // Filter on mouseover
+
+const HANDLE_MOUSELEAVE_STROKE_WIDTH = "4px"; // Stroke width on mouseleave
+const HANDLE_MOUSELEAVE_FILTER = "drop-shadow(0 0 15px rgba(0, 100, 255, 1))"; // Filter on mouseleave
+// ================================
