@@ -5,6 +5,11 @@ import { stopTraining } from './event-handlers.js';
 import { getNodeData, handleNeuronMouseover, handleNeuronMouseleave, createNeuronPopup, updateNeuronPopup, hideNeuronPopup } from './neuron/neuron-info.js';
 import { InputNode, HiddenNode, OutputNode } from './neuron/node.js';
 
+// Define color scale for continuous visual feedback
+const colorScale = d3.scaleSequential()
+    .interpolator(d3.interpolateViridis) // Choose a color scheme
+    .domain([0, 1]); // Normalize based on activation range
+
 let nodes = [];
 let links = [];
 let popup;
@@ -168,11 +173,34 @@ function setupLinkHover(line, sourceNode, targetNode, weight, lightsGroup) {
     });
 }
 
-export function updateNodesWithData(data, layers) {
+
+export function updateNodesWithData(data, layers, percentile = 75) {
+    // Collect all activation values for Hidden and Output nodes
+    const activationValues = [];
+    nodes.forEach(node => {
+        if (node.layerIndex !== 0 && node.currentData && typeof node.currentData.activation === 'number') {
+            activationValues.push(node.currentData.activation);
+        }
+    });
+
+    // Define the desired percentile (e.g., top 25%)
+    const sortedActivations = activationValues.sort(d3.ascending);
+    const ACTIVATION_THRESHOLD = d3.quantile(sortedActivations, percentile / 100) || 0.5; // Fallback to 0.5 if undefined
+
+    // Determine min and max for the color scale
+    const minActivation = d3.min(activationValues) || 0;
+    const maxActivation = d3.max(activationValues) || 1;
+
+    // Update color scale with dynamic domain
+    const colorScale = d3.scaleSequential()
+        .interpolator(d3.interpolateViridis)
+        .domain([minActivation, maxActivation]);
+
+    // Update each node with the calculated threshold and color scale
     nodes.forEach(node => {
         const nodeData = getNodeData(node.layerIndex, node.i, data.forward_data, data, layers);
-        node.updateData(nodeData);
-        
+        node.updateData(nodeData, ACTIVATION_THRESHOLD, colorScale);
+
         // If this node is currently being hovered over or its popup is displayed, update its popup
         if (node === currentHoveredNode || (popup.currentNode && node === popup.currentNode)) {
             updateNeuronPopup(popup, node.x, node.y, { 
