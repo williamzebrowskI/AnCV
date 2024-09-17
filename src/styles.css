@@ -345,22 +345,22 @@ html, body {
   circle {
     transition: fill 0.3s, stroke 0.3s, stroke-width 0.3s;
   }
-
-/* Visual indicators for InputNodes based on input values */
-.input-low {
+  
+  /* Visual indicators for InputNodes based on input values */
+  .input-low {
     fill: rgba(255, 255, 255, 0.1);
-}
-
-.input-medium {
+  }
+  
+  .input-medium {
     fill: rgba(255, 255, 255, 0.3);
-}
-
-.input-high {
+  }
+  
+  .input-high {
     fill: rgba(255, 255, 255, 0.5);
-}
-
-/* Tooltip styles */
-.tooltip {
+  }
+  
+  /* Tooltip styles */
+  .tooltip {
     position: absolute;
     text-align: left;
     padding: 8px;
@@ -372,4 +372,4 @@ html, body {
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.3s;
-}
+  }
