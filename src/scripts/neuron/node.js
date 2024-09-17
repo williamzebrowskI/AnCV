@@ -1,6 +1,6 @@
 // node.js
 
-import {handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup, updatePopupPosition } from './neuron-info.js';
+import { handleNeuronMouseover, handleNeuronMouseleave, updateNeuronPopup, hideNeuronPopup, updatePopupPosition } from './neuron-info.js';
 import { updateConnections, setCurrentHoveredNode, clearCurrentHoveredNode } from '../network-visualization.js';
 
 let isOverPopup = false; 
@@ -14,6 +14,7 @@ class Node {
         this.nodeIndex = nodeIndex;
         this.popup = popup;
         this.popupGroup = popupGroup;
+        this.isFiring = false; // Initialize firing state
 
         this.node = svg.append("circle")
             .attr("cx", this.x)
@@ -39,7 +40,46 @@ class Node {
         // console.log("Updating base node data", data);
         this.currentData = data;  // Store the current data
         this.updatePopupContent(data);
+        this.updateFiringState(data.activation); // Update firing state based on activation
     }
+
+    // New method to update firing state
+    updateFiringState(activation) {
+        const ACTIVATION_THRESHOLD = 0.5; // Define your threshold
+        if (activation >= ACTIVATION_THRESHOLD && !this.isFiring) {
+            this.isFiring = true;
+            this.node.classed("firing", true); // Add the 'firing' class for CSS animation
+        } else if (activation < ACTIVATION_THRESHOLD && this.isFiring) {
+            this.isFiring = false;
+            this.node.classed("firing", false); // Remove the 'firing' class
+        }
+    }
+
+    // Define the firing animation (e.g., pulsing)
+    /*
+    Alternative approach using D3 transitions:
+    startFiringAnimation() {
+        this.node
+            .transition()
+            .duration(1000)
+            .ease(d3.easeCubicInOut)
+            .attr("r", this.radius * 1.3)
+            .transition()
+            .duration(1000)
+            .ease(d3.easeCubicInOut)
+            .attr("r", this.radius)
+            .on("end", () => {
+                if (this.isFiring) {
+                    this.startFiringAnimation(); // Repeat the animation if still firing
+                }
+            });
+    }
+
+    stopFiringAnimation() {
+        this.node.interrupt() // Interrupt ongoing transitions
+            .attr("r", this.radius); // Reset radius
+    }
+    */
 
     dragStarted(event) {
         d3.select(this.node.node()).raise().attr("stroke", "black");
@@ -135,6 +175,7 @@ export class InputNode extends Node {
         this.currentData = data;  // Store the current data
         const inputValue = this.formatValue(data.inputValue);
         this.setupMouseEvents("Input", { inputValue });
+        this.updateFiringState(data.inputValue); // Input nodes firing based on inputValue
     }
 }
 
@@ -148,6 +189,7 @@ export class HiddenNode extends Node {
         const popupData = this.formatNodeData(data);
         console.log(`Hidden Node ${this.nodeIndex} Data:`, popupData);
         this.setupMouseEvents(`Hidden Layer ${this.layerIndex}`, popupData);
+        this.updateFiringState(data.activation); // Hidden nodes firing based on activation
     }
 
     formatNodeData(data) {
@@ -164,9 +206,7 @@ export class HiddenNode extends Node {
 
     formatValue(value) {
         if (typeof value === 'number') return value.toFixed(4);
-        if (Array.isArray(value)) {
-            return value.map(v => this.formatValue(v));
-        }
+        if (Array.isArray(value)) return value.map(v => this.formatValue(v));
         return value != null ? String(value) : 'N/A';
     }
 }
@@ -181,6 +221,7 @@ export class OutputNode extends Node {
         const popupData = this.formatNodeData(data);
         // console.log("Output Node Data:", popupData);
         this.setupMouseEvents("Output", popupData);
+        this.updateFiringState(data.activation); // Output nodes firing based on activation
     }
 
     formatNodeData(data) {
