@@ -30,7 +30,7 @@ import {
         .attr("cx", this.x)
         .attr("cy", this.y)
         .attr("r", this.radius)
-        .style("fill", "rgba(255, 255, 255, 0.1)")
+        .style("fill", "rgba(75, 0, 130, 1)")
         .style("stroke", "rgba(0, 255, 255, 1)")
         .style("stroke-width", "4px")
         .style("filter", "drop-shadow(0 0 15px rgba(0, 100, 255, 1))");
