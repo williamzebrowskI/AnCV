@@ -8,8 +8,8 @@ import torch
 import numpy as np
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500"}})
-socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5500"])
+CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5501"}})
+socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5501"])
 
 training_thread = None
 
@@ -125,4 +125,4 @@ def stop_training():
         socketio.emit('training_stopped', {"message": "Training stopped"}) 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='127.0.0.1', port=5000, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, host='127.0.0.1', port=5002, allow_unsafe_werkzeug=True)
