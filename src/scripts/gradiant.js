@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.updateVisualization = updateVisualization;
     window.refreshMap = refreshMap;
 
-    var socket = io.connect('http://127.0.0.1:5000');
+    var socket = io.connect('http://127.0.0.1:5002');
 
     socket.on('gradient_update', function(data) {
         console.log("Received gradient update from socket:", data);
