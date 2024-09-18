@@ -93,6 +93,15 @@ document.getElementById('loadNetworkBtn').addEventListener('click', () => {
 
 document.getElementById('inputNodes').addEventListener('input', redrawNetwork);
 
+// document.getElementById('inputNodes').addEventListener('input', function() {
+//     const max = 4;
+//     if (this.value > max) {
+//         this.value = max;
+//     } else if (this.value < 1) {
+//         this.value = 1;
+//     }
+// });
+
 document.getElementById('resetAllBtn').addEventListener('click', () => {
     ['inputNodes', 'outputNodes', 'epochs', 'learningRate', 'numDataPoints', 'noiseLevel'].forEach(id => {
         document.getElementById(id).value = id === 'inputNodes' ? 4 : id === 'outputNodes' ? 1 : id === 'epochs' ? 100 : id === 'learningRate' ? 0.001 : id === 'numDataPoints' ? 100 : 0.1;
