@@ -120,14 +120,11 @@ document.getElementById('resetAllBtn').addEventListener('click', () => {
         document.removeEventListener('hiddenLayerSizesResult', handler);
     });
     
-    fetch('http://127.0.0.1:5000/reset', { method: 'POST' })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data.message);
-            document.getElementById('trainNetworkBtn').disabled = false;
-            document.getElementById('trainNetworkBtn').classList.remove('disabled-btn');
-        })
-        .catch(error => console.error('Error resetting network:', error));
+    // Use socket.io to emit a 'reset' event
+    socket.emit('reset', {}, (response) => {
+        document.getElementById('trainNetworkBtn').disabled = false;
+        document.getElementById('trainNetworkBtn').classList.remove('disabled-btn');
+    });
 });
 
 handleExpandLossDisplay();
