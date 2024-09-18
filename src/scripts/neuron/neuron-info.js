@@ -408,6 +408,7 @@ export function updateNeuronPopup(popup, neuronX, neuronY, data) {
       popup.select(`.popup-${field}`).text("")
     );
     newEntry = { inputValue };
+    
   } else {
     const weightInfo = formatValue(data.weight);
     const biasValue = formatValue(data.bias);
