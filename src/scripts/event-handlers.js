@@ -8,7 +8,7 @@ let hiddenLayersContainer = document.getElementById('hiddenLayersContainer');
 let hiddenLayerCount = 0;
 export let stopTraining = false;
 
-const socket = io.connect('http://127.0.0.1:5000');
+const socket = io.connect('http://127.0.0.1:5002');
 
 ['connect', 'disconnect'].forEach(event => {
     socket.on(event, () => console.log(`${event === 'connect' ? 'WebSocket connection established' : 'Disconnected from WebSocket server'}`));
