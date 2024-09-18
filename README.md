@@ -1,1 +1,1 @@
-# nn-viz
+# Artificial Neural Cognitive Vizualizer (AnCV)
