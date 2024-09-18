@@ -35,9 +35,10 @@ def reset_network_state():
     nn = SimpleNeuralNetwork(input_size, hidden_sizes, output_size)
     return {"message": "Neural network has been reset to initial state."}
 
-@app.route('/reset', methods=['POST'])
-def reset_network():
-    return jsonify(reset_network_state())
+@socketio.on('reset')
+def reset_network(data):
+    reset_state = reset_network_state()
+    emit('reset_response', {'message': reset_state['message']}) 
 
 def convert_to_serializable(obj):
     if isinstance(obj, np.ndarray):
